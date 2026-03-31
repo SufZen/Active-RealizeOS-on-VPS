@@ -1,0 +1,50 @@
+name: meeting_prep
+status: active
+version: "2.0"
+description: |
+  Researches meeting attendees and prepares talking points, common ground, and questions.
+  Use when user asks to prepare for a meeting, research attendees, or create talking points.
+systems: [realization, burtucala, arena]
+task_type: general
+triggers:
+  - prepare for meeting
+  - meeting prep
+  - who is attending
+  - research attendees
+  - prepare talking points
+  - brief me on the meeting
+tools_required:
+  - web_search
+pipeline: [orchestrator]
+steps:
+  - id: search_attendees
+    type: tool
+    action: web_search
+    label: Researching attendees
+    query_template: "{user_message} LinkedIn background"
+    output_var: attendee_info
+
+  - id: validate_search
+    type: condition
+    check: "{attendee_info}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: prepare
+    type: agent
+    agent: orchestrator
+    label: Preparing talking points
+    inject_context: [attendee_info]
+    prompt: |
+      Prepare a meeting brief for: "{user_message}"
+
+      Based on the research, provide:
+      1. Attendee backgrounds (key facts, recent activity)
+      2. Talking points tailored to their interests
+      3. Questions to ask
+      4. Potential common ground or shared interests
+      5. Things to avoid or be careful about
+
+      Keep it practical and concise — this is a pre-meeting cheat sheet.
+output_format: structured_report

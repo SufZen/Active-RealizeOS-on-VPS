@@ -1,0 +1,146 @@
+name: venture_launch
+status: active
+version: "2.0"
+description: |
+  Cross-entity venture launch pipeline. Coordinates Burtucala (deal validation),
+  MC (project planning), and Realization (strategic positioning) for launching
+  a new venture or major initiative. Use when user mentions launching something new.
+systems: [realization, burtucala, arena]
+task_type: complex
+triggers:
+  - launch venture
+  - new venture
+  - launch project
+  - start new initiative
+  - venture launch
+  - new business
+  - spin up venture
+negative_triggers:
+  - sprint plan
+  - content launch
+  - product launch
+tools_required: []
+pipeline: [orchestrator]
+steps:
+  - id: scope
+    type: agent
+    agent: orchestrator
+    label: Defining venture scope
+    prompt: |
+      The user wants to launch a new venture/initiative: "{user_message}"
+
+      Extract and clarify:
+      1. What is the venture/initiative?
+      2. Which entity systems are involved? (Realization, Burtucala, MC)
+      3. What is the target market/audience?
+      4. What is the investment thesis or business model?
+      5. Timeline expectations
+
+      Produce a concise venture brief (1 page max).
+    output_var: venture_brief
+
+  - id: deal_validation
+    type: delegate
+    delegate_to: deal_analyst
+    delegate_system: burtucala
+    label: Burtucala deal validation
+    inject_context: [venture_brief]
+    prompt: |
+      Validate this venture opportunity:
+      {venture_brief}
+
+      Provide:
+      - Market opportunity assessment
+      - Competitive landscape
+      - Financial viability (rough ROI/IRR estimate)
+      - Risk factors
+      - GO/NO-GO recommendation with conditions
+    output_var: deal_validation
+
+  - id: project_plan
+    type: delegate
+    delegate_to: project_director
+    delegate_system: arena
+    label: MC project planning
+    inject_context: [venture_brief, deal_validation]
+    prompt: |
+      Create a project launch plan for this validated venture:
+      {venture_brief}
+
+      Deal validation results:
+      {deal_validation}
+
+      Produce:
+      - Phase breakdown (Phase 0 through launch)
+      - Key milestones with dates
+      - Resource requirements (budget, team, tools)
+      - Risk mitigation plan
+      - First 30-day action items
+    output_var: project_plan
+
+  - id: strategic_positioning
+    type: delegate
+    delegate_to: strategist
+    delegate_system: realization
+    label: Realization strategic positioning
+    inject_context: [venture_brief, deal_validation, project_plan]
+    prompt: |
+      Position this venture within the Realization portfolio:
+      {venture_brief}
+
+      Deal validation:
+      {deal_validation}
+
+      Project plan:
+      {project_plan}
+
+      Produce:
+      - Strategic positioning statement
+      - Brand alignment with Realization ecosystem
+      - Go-to-market narrative
+      - Stakeholder communication plan
+      - Portfolio synergy opportunities
+    output_var: positioning
+
+  - id: synthesis
+    type: agent
+    agent: orchestrator
+    label: Compiling launch package
+    inject_context: [venture_brief, deal_validation, project_plan, positioning]
+    prompt: |
+      Compile the complete venture launch package:
+
+      VENTURE LAUNCH PACKAGE
+      ======================
+
+      1. VENTURE BRIEF
+      {venture_brief}
+
+      2. DEAL VALIDATION (Burtucala)
+      {deal_validation}
+
+      3. PROJECT PLAN (Marvelous Creations)
+      {project_plan}
+
+      4. STRATEGIC POSITIONING (Realization)
+      {positioning}
+
+      5. UNIFIED RECOMMENDATION
+      - Overall GO/NO-GO
+      - Critical success factors
+      - Next 3 actions to take
+
+      Keep it actionable and concise.
+    output_var: launch_package
+
+  - id: confirm
+    type: human
+    question: |
+      Venture launch package ready:
+      {launch_package}
+
+      Would you like me to:
+      1. Create ClickUp tasks for the project plan?
+      2. Save this to Google Drive?
+      3. Draft an investor brief?
+output_format: structured_report

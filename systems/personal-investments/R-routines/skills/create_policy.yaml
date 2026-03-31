@@ -1,0 +1,46 @@
+name: create_policy
+status: active
+version: "2.0"
+description: |
+  Creates or refines the personal investment policy using the account registry,
+  asset universe, authority rules, and current operating goals.
+system: personal-investments
+task_type: financial
+triggers:
+  - create investment policy
+  - draft my policy
+  - investment mandate
+  - define allocation policy
+  - refine investment policy
+steps:
+  - id: draft_policy
+    type: agent
+    agent: investment_cio
+    extra_context_files:
+      - systems/personal-investments/B-brain/account-registry.md
+      - systems/personal-investments/B-brain/asset-universe.md
+      - systems/personal-investments/F-foundations/investment-policy.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+    prompt: |
+      Draft or refine the personal investment policy for this request:
+      "{user_message}"
+
+      Produce:
+      1. mandate
+      2. strategic allocation structure
+      3. tactical sleeve rules
+      4. authority mode implications
+      5. review cadence
+      6. unresolved questions
+  - id: risk_review
+    type: agent
+    agent: risk_controller
+    inject_context: [draft_policy]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the proposed policy draft below for missing guardrails, ambiguity,
+      or authority-mode problems. Return a concise approval note or required fixes.
+output_format: text

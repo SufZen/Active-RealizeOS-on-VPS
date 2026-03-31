@@ -1,0 +1,50 @@
+name: ab_content
+status: active
+version: "2.0"
+description: |
+  A/B content testing: generates two content variants using different approaches,
+  then compares and scores them. Leverages parallel agent execution for efficiency.
+  Use when user asks to create two versions of content, test different angles, or compare approaches.
+  Do NOT use for a single content piece (use linkedin_engage or content_pipeline instead).
+systems: [realization, burtucala, arena]
+task_type: content
+triggers:
+  - A/B test
+  - content variants
+  - split test
+  - two versions
+  - compare versions
+  - which version
+  - variant A and B
+negative_triggers:
+  - social analytics
+  - engagement rate
+pipeline: [copywriter, gatekeeper]
+steps:
+  - id: variants
+    type: parallel_agents
+    label: Generating two content variants
+    agents: [copywriter, copywriter]
+    prompts:
+      - |
+        Write VARIANT A using a direct, benefit-led approach.
+        Lead with the key value proposition. Be clear, concise, and action-oriented.
+        Content request: "{user_message}"
+      - |
+        Write VARIANT B using a story-driven, emotional approach.
+        Start with a relatable scenario or insight. Build empathy before presenting the solution.
+        Content request: "{user_message}"
+    synthesis_agent: gatekeeper
+    synthesis_prompt: |
+      Compare both content variants objectively. Score each on a scale of 1-10 for:
+      1. Hook strength — does the opening grab attention?
+      2. Clarity — is the message easy to understand?
+      3. Brand voice — does it match the brand?
+      4. Call-to-action — is the next step clear?
+      5. Emotional resonance — does it connect?
+
+      Present scores in a table, then recommend which variant to publish and why.
+      Include the full text of the recommended variant at the end.
+    output_var: comparison
+
+output_format: plain

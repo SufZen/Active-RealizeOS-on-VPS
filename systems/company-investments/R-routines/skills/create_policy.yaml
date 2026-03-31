@@ -1,0 +1,39 @@
+name: create_policy
+status: active
+version: "2.0"
+description: |
+  Creates or refines the company treasury and investment policy from account,
+  liquidity, and governance context.
+system: company-investments
+task_type: financial
+triggers:
+  - create treasury policy
+  - create investment policy
+  - company investment mandate
+  - treasury mandate
+steps:
+  - id: draft_policy
+    type: agent
+    agent: investment_cio
+    extra_context_files:
+      - systems/company-investments/B-brain/account-registry.md
+      - systems/company-investments/B-brain/asset-universe.md
+      - systems/company-investments/F-foundations/investment-policy.md
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/F-foundations/risk-rules.md
+    prompt: |
+      Draft or refine the company treasury and investment policy for:
+      "{user_message}"
+
+      Cover mandate, liquidity buckets, reserve rules, tactical sleeves,
+      governance gates, and review cadence.
+  - id: risk_review
+    type: agent
+    agent: risk_controller
+    inject_context: [draft_policy]
+    extra_context_files:
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the proposed policy draft for governance holes or mandate conflicts.
+output_format: text

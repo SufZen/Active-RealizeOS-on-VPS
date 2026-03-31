@@ -1,0 +1,72 @@
+name: content_pipeline
+status: active
+system: burtucala
+description: |
+  Creates blog posts, articles, and newsletters with Burtucala brand voice review.
+  Use when user asks to write, draft, or create content for Burtucala.
+  Do NOT use for LinkedIn posts (use linkedin_engage) or strategy analysis.
+task_type: content
+pipeline: [writer, reviewer]
+triggers:
+  - write a post
+  - blog about
+  - create content
+  - draft article
+  - reality log
+  - newsletter
+  - bureaucracy journal
+  - operator playbook
+  - case file
+negative_triggers:
+  - linkedin
+  - social media
+  - analyze
+  - strategy
+steps:
+  - id: load_brief
+    type: agent
+    agent: writer
+    label: Loading content brief and strategy context
+    prompt: |
+      Load the following context before writing:
+      - B-brain/content-strategy/content-pillars.md (identify which pillar)
+      - B-brain/content-strategy/content-formats.md (identify which format)
+      - B-brain/content-strategy/writing-samples/ (reference gold-standard examples)
+      - B-brain/content-strategy/marketing-strategy.md (GEO and distribution context)
+      - F-foundations/venture-voice.md (voice rules)
+      - I-insights/learning-log.md (what worked before)
+
+      Map the requested content to ONE pillar and ONE format.
+      Prepare a content brief with: pillar, format, platform, target persona, CTA.
+    output_var: content_brief
+
+  - id: draft
+    type: agent
+    agent: writer
+    label: Drafting content
+    inject_context: [content_brief]
+    prompt: |
+      Write the content following the brief above.
+      Apply all voice rules from venture-voice.md.
+      Use writing patterns from writer.md (opening, middle, closing patterns).
+      Include GEO elements: entity definitions, clean headers, internal links.
+      Match CTA to funnel stage.
+      Use the Copy Delivery output format from writer.md.
+    output_var: draft_content
+
+  - id: review
+    type: agent
+    agent: reviewer
+    label: Quality review
+    inject_context: [draft_content]
+    review: true
+    prompt: |
+      Review this content against:
+      1. Voice Check (no em dashes, no hype, operator tone)
+      2. Structure Check (pillar, format, length, CTA stage)
+      3. GEO Check (entity definitions, headers, internal links)
+      4. Framing Check (constraints before options, numbers before adjectives)
+      5. Accuracy Check (no invented details, Portuguese terms translated)
+
+      APPROVE or SEND BACK with specific revision instructions.
+output_format: structured_report

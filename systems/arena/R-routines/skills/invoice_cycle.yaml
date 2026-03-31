@@ -1,0 +1,14 @@
+name: invoice_cycle
+status: active
+system: arena
+description: |
+  Processes invoices through MC payment cycle (Invoice > Budget check > Fiscalizacao > Governance > Payment).
+  Use when user asks to process, approve, or pay an invoice or contractor bill.
+task_type: invoice
+pipeline: [finance_controller]
+triggers:
+  - process invoice
+  - payment approval
+  - contractor bill
+  - pay this invoice
+  - process this payment

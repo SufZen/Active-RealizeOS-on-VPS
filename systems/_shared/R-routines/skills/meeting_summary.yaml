@@ -1,0 +1,88 @@
+name: meeting_summary
+status: active
+version: "2.0"
+channel: document
+description: |
+  Captures meeting notes and generates structured summaries.
+  Can pull calendar context for the current meeting, then save to Google Drive.
+  Use when user shares meeting notes, key points, or asks to summarize a meeting.
+systems: [realization, burtucala, arena, personal]
+task_type: document
+use_templates: true
+triggers:
+  - meeting notes
+  - summarize meeting
+  - meeting summary
+  - what happened in the meeting
+  - capture meeting
+  - meeting recap
+  - debrief
+negative_triggers:
+  - schedule meeting
+  - create meeting
+  - book meeting
+tools_required:
+  - calendar_list_events
+  - drive_create_doc
+pipeline: [orchestrator, gatekeeper]
+steps:
+  - id: gather_context
+    type: tool
+    action: calendar_list_events
+    label: Checking today's calendar
+    params:
+      time_min: "{today}T00:00:00Z"
+      time_max: "{today}T23:59:59Z"
+    output_var: calendar_events
+
+  - id: summarize
+    type: agent
+    agent: orchestrator
+    label: Structuring meeting notes
+    inject_context: [calendar_events]
+    prompt: |
+      Based on the user's meeting notes and calendar context, create a structured meeting summary.
+
+      User's input: "{user_message}"
+
+      {template_context}
+
+      Structure the summary with:
+      - Meeting title and date ({today})
+      - Attendees (extract from notes or calendar if available)
+      - Key discussion points (organized by topic)
+      - Decisions made (specific, actionable)
+      - Action items (who, what, by when)
+      - Follow-ups needed
+
+      If the user's notes are brief, expand intelligently based on context clues.
+      Write clearly — this will be saved as a reference document.
+      IMPORTANT: Start your response with: TITLE: Meeting Notes — [short topic]
+    output_var: summary
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Reviewing meeting summary
+    inject_context: [summary]
+    review: true
+    prompt: |
+      Review this meeting summary for:
+      1. Are all action items clearly assigned?
+      2. Are decisions captured precisely?
+      3. Is anything obviously missing from the discussion notes?
+      4. Professional formatting (clean text, no markdown for Google Doc)
+
+      Provide the final polished version.
+    output_var: final_summary
+
+  - id: save_to_drive
+    type: tool
+    action: drive_create_doc
+    label: Saving to Google Drive
+    params:
+      title: "{doc_title}"
+      content: "{final_summary}"
+    output_var: drive_result
+
+output_format: structured_report

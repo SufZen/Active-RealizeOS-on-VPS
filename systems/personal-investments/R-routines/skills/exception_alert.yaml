@@ -1,0 +1,32 @@
+name: exception_alert
+status: active
+version: "2.0"
+description: |
+  Generates a focused risk and exception summary for the personal investment system.
+system: personal-investments
+task_type: financial
+triggers:
+  - exception alert
+  - risk alert
+  - exposure alert
+  - what is broken in my portfolio
+steps:
+  - id: risk_alert
+    type: agent
+    agent: risk_controller
+    extra_context_files:
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+      - systems/personal-investments/B-brain/account-registry.md
+      - systems/personal-investments/I-insights/performance-review.md
+      - systems/personal-investments/R-routines/state-map.md
+    prompt: |
+      Produce a concise PERSONAL INVESTMENT EXCEPTION ALERT for:
+      "{user_message}"
+
+      Include:
+      - hard blockers
+      - soft warnings
+      - stale or missing data
+      - next action needed
+output_format: text

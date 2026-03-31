@@ -1,0 +1,22 @@
+name: deal_pipeline
+status: active
+system: burtucala
+description: |
+  Evaluates real estate deals using the Golden Rating framework with quality review.
+  Use when user asks to evaluate, rate, score, or analyze a specific deal or property.
+  Do NOT use for general property search (use property_search).
+task_type: deal_analysis
+pipeline: [deal_analyst, gatekeeper]
+triggers:
+  - evaluate this deal
+  - analyze property
+  - golden rating
+  - rate this deal
+  - score this property
+  - deal analysis
+  - underwriting for
+  - due diligence on
+negative_triggers:
+  - search properties
+  - find properties
+  - listings in

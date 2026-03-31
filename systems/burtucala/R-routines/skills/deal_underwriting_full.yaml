@@ -1,0 +1,87 @@
+name: deal_underwriting_full
+status: active
+version: "2.0"
+description: |
+  Full property deal underwriting with web comps, Golden Rating scoring,
+  financial modeling, and sensitivity analysis. Use when user wants a
+  comprehensive deal evaluation, not just a quick rating.
+system: burtucala
+task_type: deal_analysis
+triggers:
+  - full underwriting
+  - comprehensive deal analysis
+  - full deal analysis
+  - deep dive on this deal
+  - underwrite this property
+  - investment memo for
+  - full evaluation of
+negative_triggers:
+  - quick rating
+  - golden rating only
+  - property search
+  - find properties
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [deal_analyst, gatekeeper]
+steps:
+  - id: property_overview
+    type: agent
+    agent: deal_analyst
+    label: Documenting property overview
+    prompt: |
+      Extract and document the property overview from: "{user_message}"
+
+      Capture: property type, location, size, asking price, condition,
+      current use/income, price per sqm, ownership structure.
+      Flag any missing information that needs to be gathered.
+    output_var: property_overview
+
+  - id: comp_search
+    type: tool
+    action: web_search
+    label: Searching for comparables
+    query_template: "{user_message} comparable properties price per sqm site:idealista.pt OR site:imovirtual.com"
+    output_var: comp_results
+
+  - id: comp_fetch
+    type: tool
+    action: web_fetch
+    label: Reading comparable listings
+    params:
+      url: "{first_result_url}"
+    output_var: comp_details
+
+  - id: analysis
+    type: agent
+    agent: deal_analyst
+    label: Full underwriting analysis
+    model: claude_opus
+    inject_context: [property_overview, comp_results, comp_details]
+    prompt: |
+      Perform a full underwriting analysis:
+
+      1. COMP SET: Build a 5-8 property comp table (price, sqm, price/sqm, condition)
+      2. GOLDEN RATING: Score 1-5 on Location, Price/sqm, Condition, Yield Potential, Value-Add
+      3. FINANCIAL MODEL: Acquisition cost (with IMT, stamp duty), projected NOI, Yield on Cost, IRR (5-year)
+      4. SENSITIVITY TABLE: 5x5 matrix varying price (-20% to +20%) and rent (-20% to +20%)
+      5. RISK ASSESSMENT: Top 5 risks with mitigation
+      6. VERDICT: BUY / CONDITIONAL / PASS with reasoning
+
+      Be rigorous. Use real comparable data from search results.
+    output_var: full_analysis
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    inject_context: [full_analysis]
+    review: true
+    prompt: |
+      Review this underwriting analysis for:
+      1. Are the comp values realistic?
+      2. Are financial assumptions conservative enough?
+      3. Are all risks properly flagged?
+      4. Is the verdict supported by the analysis?
+      5. Any missing considerations?
+output_format: structured_report

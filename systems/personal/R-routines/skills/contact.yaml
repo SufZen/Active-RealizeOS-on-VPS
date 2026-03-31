@@ -1,0 +1,194 @@
+name: contact
+status: active
+version: "1.0"
+description: |
+  Contacts any entity on Asaf's behalf through the best available channel — phone call (ElevenLabs/Twilio), email, WhatsApp, SMS, or Telegram.
+  Use when user asks to call someone, phone an entity, contact a person or organization, reach out to, send a message to, dial, make a call, contact Finanças, contact a supplier, or reach a partner.
+  Do NOT use for creating content, drafting documents for Asaf to send himself, or internal system actions.
+system: personal
+task_type: communication
+triggers:
+  - call
+  - phone
+  - contact
+  - reach out to
+  - send message to
+  - WhatsApp
+  - email
+  - dial
+  - make a call
+  - ligar para
+  - contact Finanças
+  - contact SMAS
+  - contact SNS
+  - book appointment by phone
+  - schedule a call
+  - speak to someone at
+  - follow up with
+  - check with
+  - chase up
+negative_triggers:
+  - write email for me to send
+  - draft a message
+  - write a letter
+  - compose
+  - create content
+pipeline: [personal]
+steps:
+  - id: lookup
+    type: agent
+    agent: personal
+    label: Looking up entity contact details
+    prompt: |
+      User wants to contact an entity: "{user_message}"
+
+      Search the knowledge base:
+      1. Check `B-brain/portugal-bureaucracy/known-contacts.md` for Portuguese entities
+      2. Check `systems/_shared/B-brain/known-contacts.md` for personal contacts, partners, HomeAid team
+      3. If not found, ask the user for the phone number / contact details
+
+      For the found entity, return:
+      - Entity name and type
+      - Available channels: [phone, email, whatsapp, sms, telegram] — as listed in known-contacts.md
+      - Phone number and/or email
+      - Operating hours and language
+      - Any IVR navigation tips or notes
+    output_var: contact_lookup
+
+  - id: select_channel
+    type: agent
+    agent: personal
+    label: Selecting best communication channel
+    inject_context: [contact_lookup]
+    prompt: |
+      Based on the contact lookup: {contact_lookup}
+
+      And the user's request: "{user_message}"
+
+      1. Identify the best channel for this contact:
+         - If user specified a channel (e.g., "call", "WhatsApp"), use that
+         - If multiple channels available, prefer: phone > WhatsApp > email > SMS > Telegram
+         - If only one channel available, use it
+         - If no contact found, ask user for contact details before proceeding
+
+      2. Collect any missing parameters for this contact:
+         - For phone: need the phone number (already found or ask user)
+         - For email: need email address + subject context
+         - For the purpose: what exactly does Asaf want to achieve?
+         - For Portuguese entities: may need NIF or case reference
+         - Language of the call/message (default: Portuguese for PT entities)
+
+      3. State clearly: "I will [call/email/WhatsApp] [entity] at [number/address] to [objective]."
+    output_var: channel_selection
+
+  - id: script
+    type: agent
+    agent: personal
+    label: Generating action script
+    inject_context: [contact_lookup, channel_selection]
+    prompt: |
+      Generate the action script for this contact:
+
+      Contact: {contact_lookup}
+      Channel: {channel_selection}
+      User request: "{user_message}"
+
+      For a PHONE CALL, generate:
+      - Opening statement (polite, professional, purpose stated in first 10 seconds)
+      - Key information to communicate (list)
+      - Questions to ask / information to collect (list)
+      - IVR navigation if applicable (e.g., "Press 2 for IRS, press 1 for certificates")
+      - Escalation path if first agent cannot help
+      - How to close the call
+
+      For an EMAIL, generate:
+      - Subject line
+      - Full email body (formal Portuguese or English as appropriate)
+      - Any attachments to mention
+
+      For WhatsApp/SMS/Telegram:
+      - Short, clear message text
+
+      Use KB context (portugal-bureaucracy/ for PT entities) to make the script accurate.
+      Include Asaf's NIF if relevant for the interaction.
+    output_var: action_script
+
+  - id: confirm_present
+    type: agent
+    agent: personal
+    label: Preparing confirmation briefing
+    inject_context: [contact_lookup, channel_selection, action_script]
+    prompt: |
+      Prepare a clear confirmation briefing for Asaf before taking action.
+
+      Contact lookup: {contact_lookup}
+      Channel selection: {channel_selection}
+      Action script: {action_script}
+
+      Format as:
+
+      **Ready to Contact: [Entity Name]**
+      - **Channel:** [phone/email/WhatsApp/etc.]
+      - **Number/Address:** [contact detail]
+      - **Objective:** [what we're trying to achieve]
+      - **Language:** [Portuguese/English]
+
+      **Script:**
+      [the full script or message content]
+
+      End with: "Reply **proceed** to execute this, **cancel** to abort, or describe any changes you'd like to make."
+    output_var: confirmation_briefing
+
+  - id: confirm
+    type: human
+    label: Awaiting user approval
+    question: "{confirmation_briefing}"
+
+  - id: extract_params
+    type: agent
+    agent: personal
+    label: Extracting call parameters
+    inject_context: [contact_lookup, channel_selection, action_script]
+    prompt: |
+      Extract the call parameters from the context below.
+
+      Contact: {contact_lookup}
+      Channel: {channel_selection}
+      Script: {action_script}
+
+      Output ONLY a JSON object with these exact keys, no other text:
+      {"to_number": "+351XXXXXXXXX", "task_description": "what to say/achieve on the call", "service_name": "entity name", "language": "pt"}
+
+      Rules:
+      - to_number MUST be in E.164 format (e.g., +351923309030)
+      - task_description should be the core script/objective in 1-2 sentences
+      - language: "pt" for Portuguese entities, "en" for English
+    output_var: call_params
+
+  - id: make_call
+    type: tool
+    action: outbound_call
+    label: Initiating phone call
+    params:
+      to_number: "{to_number}"
+      task_description: "{task_description}"
+      service_name: "{service_name}"
+      language: "{language}"
+    output_var: call_result
+
+  - id: status
+    type: agent
+    agent: personal
+    label: Confirming action and next steps
+    inject_context: [call_result]
+    prompt: |
+      Based on call result: {call_result}
+
+      Provide a clear status update to Asaf:
+      1. Whether the call was initiated successfully
+      2. The call ID for reference
+      3. Expected next steps: "You'll receive a summary with transcript and action items when the call completes."
+      4. If the call failed: explain the error and suggest alternatives (retry, call manually with the script provided earlier)
+    output_var: status_report
+
+output_format: document

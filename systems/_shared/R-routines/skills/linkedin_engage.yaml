@@ -1,0 +1,72 @@
+name: linkedin_engage
+status: active
+version: "2.0"
+description: |
+  Creates engaging LinkedIn posts with audience-optimized hooks and CTAs.
+  Use when user asks to write a LinkedIn post, social media post, or professional post.
+  Do NOT use for blog posts, newsletters, or long-form articles (use content_pipeline).
+systems: [realization, burtucala]
+task_type: linkedin
+triggers:
+  - linkedin post
+  - linkedin engage
+  - write for linkedin
+  - social media post
+  - engage on linkedin
+  - professional post
+negative_triggers:
+  - blog
+  - newsletter
+  - article
+  - report
+tools_required:
+  - web_search
+pipeline: [copywriter, gatekeeper]
+steps:
+  - id: research_trends
+    type: tool
+    action: web_search
+    label: Researching trending topics
+    query_template: "{user_message} LinkedIn trends {today}"
+    output_var: trend_data
+
+  - id: validate_search
+    type: condition
+    check: "{trend_data}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: draft_post
+    type: agent
+    agent: copywriter
+    label: Drafting LinkedIn post
+    inject_context: [trend_data]
+    prompt: |
+      Create an engaging LinkedIn post about: "{user_message}"
+
+      Use the trend data for context. Follow these LinkedIn best practices:
+      - Strong hook in the first 2 lines (before "see more")
+      - Personal storytelling angle
+      - Short paragraphs (1-2 sentences)
+      - End with a question or CTA to drive engagement
+      - Include 2-3 relevant hashtags only if they add real discoverability
+      - Keep it under 1300 characters for optimal reach
+      - Use line breaks for readability
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality and brand voice review
+    inject_context: [draft_post]
+    review: true
+    prompt: |
+      Review this LinkedIn post for:
+      1. Brand voice consistency
+      2. Engagement potential (hook, CTA)
+      3. Professional tone balance (not too salesy)
+      4. Hashtag relevance
+      5. Length optimization
+
+      Provide the final polished version.
+output_format: text

@@ -1,0 +1,139 @@
+name: portfolio_review
+status: active
+version: "2.0"
+description: |
+  Cross-entity portfolio review. Collects status from all three venture systems
+  (Realization, Burtucala, MC) and synthesizes a unified portfolio dashboard.
+  Use when user asks for an overall portfolio status or cross-venture review.
+systems: [realization, burtucala, arena]
+task_type: complex
+triggers:
+  - portfolio review
+  - portfolio status
+  - all ventures status
+  - cross-venture review
+  - how are all ventures doing
+  - overall status
+  - ecosystem review
+  - venture dashboard
+negative_triggers:
+  - single venture
+  - just realization
+  - just burtucala
+  - just mc
+tools_required: []
+pipeline: [orchestrator]
+steps:
+  - id: realization_status
+    type: delegate
+    delegate_to: strategist
+    delegate_system: realization
+    label: Realization status report
+    prompt: |
+      Provide a concise status report for the Realization venture studio:
+
+      REALIZATION STATUS
+      - Current phase/stage
+      - Key metrics (if available)
+      - Active projects and their status
+      - Recent accomplishments (last 2 weeks)
+      - Current blockers or risks
+      - Next priorities
+
+      Be factual, use bullet points, max 200 words.
+    output_var: realization_status
+
+  - id: burtucala_status
+    type: delegate
+    delegate_to: deal_analyst
+    delegate_system: burtucala
+    label: Burtucala status report
+    prompt: |
+      Provide a concise status report for the Burtucala venture:
+
+      BURTUCALA STATUS
+      - Active deals/pipeline
+      - Property portfolio status
+      - Content/marketing metrics
+      - Revenue status
+      - Current blockers or risks
+      - Next priorities
+
+      Be factual, use bullet points, max 200 words.
+    output_var: burtucala_status
+
+  - id: mc_status
+    type: delegate
+    delegate_to: project_director
+    delegate_system: arena
+    label: Marvelous Creations status report
+    prompt: |
+      Provide a concise status report for the Arena Habitat SPV:
+
+      MARVELOUS CREATIONS STATUS
+      - Construction phase/stage
+      - Budget vs. actual (if known)
+      - Timeline status (on track/delayed)
+      - Active milestones
+      - Current blockers or risks
+      - Next priorities
+
+      Be factual, use bullet points, max 200 words.
+    output_var: mc_status
+
+  - id: synthesize
+    type: agent
+    agent: orchestrator
+    label: Synthesizing portfolio view
+    inject_context: [realization_status, burtucala_status, mc_status]
+    prompt: |
+      Synthesize these three venture status reports into a unified portfolio dashboard:
+
+      {realization_status}
+
+      {burtucala_status}
+
+      {mc_status}
+
+      Format as:
+
+      PORTFOLIO DASHBOARD
+      ===================
+      Date: [today]
+
+      HEALTH SCORES (Red/Yellow/Green per venture)
+      - Realization: [status]
+      - Burtucala: [status]
+      - Marvelous Creations: [status]
+
+      TOP 3 PRIORITIES (across all ventures)
+      1. [highest priority item with venture tag]
+      2. [second priority]
+      3. [third priority]
+
+      CROSS-VENTURE SYNERGIES
+      - [Any opportunities for cross-pollination]
+
+      RISKS & BLOCKERS
+      - [Consolidated risk list]
+
+      FINANCIAL SNAPSHOT
+      - [If any financial data available]
+
+      RECOMMENDED ACTIONS
+      1. [Most important action]
+      2. [Second action]
+      3. [Third action]
+    output_var: portfolio_dashboard
+
+  - id: confirm
+    type: human
+    question: |
+      Portfolio review complete:
+      {portfolio_dashboard}
+
+      Would you like me to:
+      1. Create a detailed report in Google Drive?
+      2. Generate an LP update from this?
+      3. Create follow-up tasks in ClickUp?
+output_format: structured_report

@@ -1,0 +1,37 @@
+name: cross_system_investment_dashboard
+status: active
+version: "2.0"
+description: |
+  Produces a combined investment dashboard across the personal and company
+  investment systems using explicit shared context files.
+task_type: complex
+triggers:
+  - cross system investment dashboard
+  - combined investment dashboard
+  - compare personal and company portfolio
+  - investment systems overview
+steps:
+  - id: dashboard
+    type: agent
+    agent: orchestrator
+    extra_context_files:
+      - systems/personal-investments/F-foundations/investment-policy.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/I-insights/performance-review.md
+      - systems/personal-investments/R-routines/state-map.md
+      - systems/company-investments/F-foundations/investment-policy.md
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/I-insights/performance-review.md
+      - systems/company-investments/R-routines/state-map.md
+      - systems/_shared/R-routines/protocols/MTH-50-investment-governance-protocol.md
+    prompt: |
+      Produce a CROSS-SYSTEM INVESTMENT DASHBOARD for:
+      "{user_message}"
+
+      Structure:
+      - personal system snapshot
+      - company system snapshot
+      - shared risks or governance differences
+      - pending approvals by system
+      - top next actions
+output_format: structured_report

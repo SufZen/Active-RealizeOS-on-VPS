@@ -1,0 +1,79 @@
+name: seo_content_pipeline
+status: active
+version: "2.0"
+description: |
+  End-to-end SEO content creation: keyword research, competitive analysis,
+  SEO-optimized draft, quality audit, and publishing recommendations.
+  Use when user asks to write a blog post, SEO article, or optimized content.
+systems: [realization, burtucala]
+task_type: content
+triggers:
+  - write seo content
+  - seo blog post
+  - optimize for search
+  - keyword research
+  - write an article about
+  - seo optimized post
+  - content for seo
+  - blog post about
+  - write a blog
+negative_triggers:
+  - linkedin post
+  - social media
+  - tweet
+  - email
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [copywriter, gatekeeper]
+steps:
+  - id: keyword_research
+    type: tool
+    action: web_search
+    label: Keyword research
+    query_template: "{user_message} best keywords SEO"
+    output_var: keyword_data
+
+  - id: competitor_scan
+    type: tool
+    action: web_fetch
+    label: Analyzing top result
+    params:
+      url: "{first_result_url}"
+    output_var: competitor_content
+
+  - id: draft
+    type: agent
+    agent: copywriter
+    label: Writing SEO-optimized draft
+    inject_context: [keyword_data, competitor_content]
+    prompt: |
+      Write an SEO-optimized article for: "{user_message}"
+
+      Use the keyword research and competitor analysis below to:
+      1. Include the primary keyword in the title, first paragraph, and H2s
+      2. Match or exceed competitor content depth
+      3. Add unique insights the competitors don't cover
+      4. Use short paragraphs, bullet points, and clear H2/H3 structure
+      5. Include a meta description (under 160 chars) at the top
+
+      Follow E-E-A-T principles: demonstrate experience and expertise.
+    output_var: seo_draft
+
+  - id: audit
+    type: agent
+    agent: gatekeeper
+    label: SEO quality audit
+    inject_context: [seo_draft, keyword_data]
+    review: true
+    prompt: |
+      Review this SEO article for:
+      1. Keyword placement (title, H1, first 100 words, H2s, meta)
+      2. Content depth vs competitors
+      3. Readability and structure
+      4. Brand voice consistency
+      5. No keyword stuffing
+      6. Internal/external linking opportunities
+
+      Provide the final version with corrections.
+output_format: structured_report

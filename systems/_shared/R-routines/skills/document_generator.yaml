@@ -1,0 +1,126 @@
+name: document_generator
+status: active
+version: "2.0"
+channel: document
+description: |
+  Generates structured business documents (proposals, memos, reports) and saves to Google Drive.
+  Use when user asks to write, create, or generate a document, proposal, memo, or report.
+  Also triggers on Google Doc/Drive export requests.
+  Automatically detects matching templates from shared-library/templates/ for consistent structure.
+systems: [realization, burtucala, arena, personal]
+task_type: document
+triggers:
+  - write a document
+  - generate document
+  - create a proposal
+  - draft a memo
+  - write a report
+  - business proposal
+  - project proposal
+  - executive summary
+  - write memo
+  - create report
+  - create a document
+  - create document
+  - create a doc
+  - google doc
+  - save to drive
+  - save to google doc
+  - should be in a google doc
+  - export to google doc
+  - export to doc
+  - lp report
+  - lp update
+  - investor report
+  - investor update
+  - contract summary
+  - meeting notes
+  - invoice memo
+negative_triggers:
+  - draft email
+  - write email
+  - linkedin post
+tools_required:
+  - drive_create_doc
+use_templates: true
+pipeline: [orchestrator, gatekeeper]
+steps:
+  - id: classify_doc
+    type: agent
+    agent: orchestrator
+    label: Analyzing document requirements
+    prompt: |
+      Classify and plan this document request: "{user_message}"
+
+      {template_context}
+
+      Determine:
+      1. Document type (proposal, memo, report, executive summary, brief, LP report, contract summary, meeting notes, invoice memo)
+      2. Target audience
+      3. Key sections needed (use template sections if a template was detected above)
+      4. Tone (formal, semi-formal, executive)
+      5. Estimated length
+
+      Output a brief plan as a structured outline.
+      IMPORTANT: Start your response with a short document title on the first line,
+      formatted as: TITLE: [Document Title]
+    output_var: doc_plan
+
+  - id: extract_title
+    type: condition
+    check: "{doc_plan}"
+    branches:
+      "TITLE:": continue
+      default: continue
+
+  - id: draft
+    type: agent
+    agent: orchestrator
+    label: Drafting document
+    inject_context: [doc_plan]
+    prompt: |
+      Based on the document plan, create a professional document for:
+      "{user_message}"
+
+      TODAY'S DATE: {today}
+
+      {template_context}
+
+      Write the full document as a professional would, with natural flowing paragraphs.
+      Include a title and the date ({today}) at the top. If a template structure was
+      provided above, follow its sections as a guide but adapt as needed for the content.
+      Use section titles only where they genuinely help the reader navigate -- not for
+      every paragraph. Write in complete sentences, weaving data into the narrative rather
+      than isolating it in bullet points. This will be saved to a Google Doc, so avoid
+      markdown formatting (no **bold**, no ## headers). Write like a senior consultant
+      would for a client, not like a template.
+    output_var: draft_content
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Document quality review
+    inject_context: [draft_content]
+    review: true
+    prompt: |
+      Review this business document for:
+      1. Professional tone and clarity
+      2. Logical structure and flow
+      3. Completeness — are all key points addressed?
+      4. Grammar and formatting
+      5. Actionable takeaways
+
+      Provide the final polished version as clean text (no markdown).
+      Keep the document professional and well-structured.
+    output_var: final_doc
+
+  - id: save_to_drive
+    type: tool
+    action: drive_create_doc
+    label: Saving to Google Drive
+    params:
+      title: "{doc_title}"
+      content: "{final_doc}"
+    output_var: drive_result
+
+output_format: structured_report

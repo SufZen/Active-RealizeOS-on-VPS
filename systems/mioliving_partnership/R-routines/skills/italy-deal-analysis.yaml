@@ -1,0 +1,92 @@
+name: italy-deal-analysis
+status: active
+version: "1.0"
+description: |
+  Analyzes Italian real estate deals for the MioLiving Partnership — financial underwriting, market positioning, and investment recommendation.
+  Use when user asks to analyze, evaluate, underwrite, or review an Italian property deal or investment opportunity.
+  Do NOT use for general Italian market research (use deep-market-research from shared skills).
+system: mioliving_partnership
+task_type: deal_analysis
+triggers:
+  - analyze italian deal
+  - evaluate italian property
+  - italy investment
+  - italian real estate
+  - mioliving deal
+  - underwrite this property
+  - analyze this opportunity in italy
+  - deal in italy
+  - italian property analysis
+  - investment in milan
+  - investment in rome
+  - investment in italy
+negative_triggers:
+  - portugal deal
+  - burtucala
+  - arena
+pipeline: [deal-analyst, orchestrator]
+steps:
+  - id: deal_intake
+    type: agent
+    agent: deal-analyst
+    label: Extracting deal details
+    prompt: |
+      Extract and structure the key details from this Italian deal: "{user_message}"
+
+      Required fields:
+      1. Location: City, neighborhood, region
+      2. Property type: Residential, commercial, mixed, land
+      3. Purchase price (€)
+      4. Estimated renovation/improvement cost (€)
+      5. Expected rental income (monthly, €) or sale price
+      6. Deal source: Partner-sourced, listed, off-market
+      7. Any known issues: Legal, structural, vacancy, tenants
+      8. Timeline: Closing target, renovation timeline
+
+      If information is missing, flag it as "Needs clarification."
+    output_var: deal_intake
+
+  - id: financial_analysis
+    type: agent
+    agent: deal-analyst
+    label: Running financial analysis
+    inject_context: [deal_intake]
+    prompt: |
+      Run the financial analysis for this Italian property deal.
+
+      Calculate:
+      1. Total acquisition cost (purchase + renovation + transaction costs ~5-8%)
+      2. Gross Rental Yield = (Annual Rent / Total Cost) × 100
+      3. Net Operating Income (deduct: 30% vacancies + management + maintenance)
+      4. Cash-on-Cash Return (assume 30% equity input unless specified)
+      5. Cap Rate = NOI / Total Cost
+      6. Break-even timeline
+
+      Benchmarks for Italian market:
+      - Target CoC return: 8%+ (Realization standard)
+      - Good gross yield: 5-8% (varies by city)
+      - Premium markets (Milan, Rome): lower yield but appreciation potential
+      - Secondary markets: higher yield, higher risk
+
+      Investment recommendation: STRONG BUY / BUY / HOLD / PASS
+      Include 2-3 key risks.
+    output_var: financial_analysis
+
+  - id: partnership_angle
+    type: agent
+    agent: orchestrator
+    label: Assessing partnership angle
+    inject_context: [deal_intake, financial_analysis]
+    prompt: |
+      Assess the deal from the MioLiving Partnership perspective:
+
+      1. Partner involvement: What does the Italian partner bring to this deal?
+      2. Cross-border angle: Does this connect to Portugal investor networks?
+      3. Lifestyle angle: Is this a lifestyle property or pure investment?
+      4. Deal structure recommendation: Direct acquisition, JV, co-invest, flip
+      5. Next step: Due diligence, partner meeting, site visit, or pass
+
+      Output a clear recommendation (1 paragraph) and action items.
+    output_var: partnership_angle
+
+output_format: document

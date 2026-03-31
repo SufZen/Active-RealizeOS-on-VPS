@@ -1,0 +1,101 @@
+name: call-summary
+status: active
+version: "1.0"
+description: |
+  Processes an ElevenLabs post-call webhook — parses the transcript, extracts key information and action items, saves to insights log, and delivers a structured summary to the user.
+  Use when triggered by the ElevenLabs post-call webhook event. Also use when user asks to review a past call, see what was discussed on a call, or check call outcomes.
+  Do NOT use for initiating calls (use contact skill instead).
+system: personal
+task_type: communication
+triggers:
+  - elevenlabs_post_call
+  - call completed
+  - call summary
+  - what happened on the call
+  - call transcript
+  - review call
+  - call outcome
+negative_triggers:
+  - make a call
+  - initiate call
+  - contact
+pipeline: [personal]
+steps:
+  - id: parse_transcript
+    type: agent
+    agent: personal
+    label: Parsing call transcript
+    prompt: |
+      A phone call has just completed. Parse the following call data:
+
+      Call ID: {call_id}
+      Duration: {duration_seconds} seconds
+      Status: {call_status}
+      Transcript:
+      {transcript}
+
+      Extract and structure:
+      1. **Who was called** — entity name and phone number
+      2. **Objective** — what the call was trying to achieve
+      3. **Outcome** — was the objective achieved? (Yes / Partially / No)
+      4. **Key information obtained** — specific data points, reference numbers, case numbers, appointment times
+      5. **Commitments made** — what the agent committed to on Asaf's behalf
+      6. **Follow-up actions required** — numbered list, each with a deadline if mentioned
+      7. **Escalation needed?** — if issue was not resolved and needs further action
+    output_var: parsed_summary
+
+  - id: save_log
+    type: agent
+    agent: personal
+    label: Saving to contact log
+    inject_context: [parsed_summary]
+    prompt: |
+      Save this call record to `I-insights/contact-log/`:
+
+      Create a file named: `{YYYY-MM-DD}-{entity-name}-call.md`
+
+      Content format:
+      ```
+      # Call Log: [Entity Name] — [Date]
+
+      **Call ID:** {call_id}
+      **Duration:** {duration_seconds}s
+      **Status:** {call_status}
+      **Channel:** Phone (ElevenLabs/Twilio)
+
+      ## Summary
+      [parsed_summary]
+
+      ## Full Transcript
+      [transcript]
+      ```
+
+      Confirm the file was saved.
+    output_var: log_saved
+
+  - id: deliver_summary
+    type: agent
+    agent: personal
+    label: Delivering summary to user
+    inject_context: [parsed_summary, log_saved]
+    prompt: |
+      Deliver a clean, actionable call summary to Asaf:
+
+      **📞 Call Complete: [Entity Name]**
+      **Duration:** [X] minutes | **Outcome:** [Achieved/Partial/Not resolved]
+
+      **What happened:**
+      [2-3 sentence narrative of the call]
+
+      **Key information obtained:**
+      [bullet list]
+
+      **Action items for you:**
+      [numbered list with deadlines]
+
+      **Logged at:** I-insights/contact-log/[filename]
+
+      If there are urgent follow-ups, flag them clearly.
+    output_var: user_summary
+
+output_format: document

@@ -1,0 +1,74 @@
+name: worst_case_model
+status: active
+version: "1.0"
+description: |
+  Builds a worst-case (catastrophe) financial scenario for any proposed project.
+  The Truth Engine: uncertainty dissipates only when the math shows that even in
+  the worst case, the potential protects the principal.
+  Use before creating any pitch deck, investor materials, or narrative.
+systems: [realization, burtucala, arena, company-investments]
+task_type: complex
+triggers:
+  - worst case
+  - stress test
+  - catastrophe scenario
+  - truth engine
+  - worst case model
+  - downside analysis
+  - what if everything goes wrong
+  - protect the principal
+negative_triggers:
+  - best case
+  - optimistic
+tools_required: []
+pipeline: [orchestrator]
+steps:
+  - id: worst_case_analysis
+    type: agent
+    agent: orchestrator
+    label: Building worst-case financial model
+    prompt: |
+      Build the "Portuguese Catastrophe Scenario" for:
+      "{user_message}"
+
+      Apply the Truth Engine (Manifesto Rule 2): model the absolute worst case
+      BEFORE any pitch or narrative work.
+
+      ## Catastrophe Scenario Parameters
+      - Assume maximum construction/renovation delays (+40% timeline)
+      - Assume cost overruns (+25% capex)
+      - Assume worst market conditions (price drops, demand reduction)
+      - Assume regulatory delays (licensing +6 months)
+      - Assume financing stress (rate increases, draw-down delays)
+
+      ## Analysis Structure
+
+      ### 1. Capital at Risk
+      Total investment required in the worst-case scenario.
+
+      ### 2. Revenue Under Stress
+      What revenue looks like with pessimistic assumptions.
+
+      ### 3. Exit Floor
+      What is the asset worth if we need to liquidate? Does the land/property
+      value alone protect the principal?
+
+      ### 4. Cash Flow Timeline
+      When does cash run out in the worst case? What is the maximum
+      negative cash position?
+
+      ### 5. Break-Even Under Stress
+      How long to break even in the worst case?
+
+      ### 6. Principal Protection Assessment
+      **Critical question:** Does the underlying asset value (land + any
+      improvements) protect the invested capital even if everything else fails?
+
+      ### 7. Verdict
+      - GREEN: Principal protected even in catastrophe. Proceed to Trust Engine.
+      - YELLOW: Principal mostly protected but with risk. Identify mitigations.
+      - RED: Principal at risk. Do NOT proceed to pitch. Rework the model.
+
+      Be honest. Be conservative. No hype. Numbers only.
+
+output_format: structured_report

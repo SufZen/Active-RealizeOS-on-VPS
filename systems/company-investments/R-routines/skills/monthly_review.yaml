@@ -1,0 +1,38 @@
+name: monthly_review
+status: active
+version: "2.0"
+description: |
+  Produces the monthly company investment committee review pack with performance,
+  thesis changes, liquidity notes, and pending governance actions.
+system: company-investments
+task_type: financial
+triggers:
+  - monthly investment review
+  - monthly treasury review
+  - investment committee
+  - monthly investment committee
+steps:
+  - id: committee_pack
+    type: agent
+    agent: investment_cio
+    extra_context_files:
+      - systems/company-investments/F-foundations/investment-policy.md
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/F-foundations/risk-rules.md
+      - systems/company-investments/B-brain/account-registry.md
+      - systems/company-investments/I-insights/thesis-log.md
+      - systems/company-investments/I-insights/decision-log.md
+      - systems/company-investments/I-insights/performance-review.md
+      - systems/_shared/R-routines/templates/monthly-investment-committee.md
+    prompt: |
+      Produce a MONTHLY COMPANY INVESTMENT REVIEW pack for:
+      "{user_message}"
+  - id: risk_pack_review
+    type: agent
+    agent: risk_controller
+    inject_context: [committee_pack]
+    extra_context_files:
+      - systems/company-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the committee pack and add a final risk and governance note.
+output_format: structured_report

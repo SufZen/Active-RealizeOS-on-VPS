@@ -1,0 +1,115 @@
+name: contact_research
+status: active
+version: "2.0"
+description: |
+  Researches contact details (phone numbers, addresses, hours) for Portuguese
+  entities and service providers when Paulo doesn't know them. Saves findings
+  to the knowledge base for future use.
+system: personal
+task_type: general
+triggers:
+  - search for number
+  - find number for
+  - find phone for
+  - look up number
+  - look up contact
+  - research contact
+  - find contact for
+  - what is the number for
+  - what is the phone for
+  - get me the number
+  - get me the contact
+  - find the phone number
+  - search for contact
+negative_triggers:
+  - call
+  - schedule appointment
+  - send email
+  - explain
+  - summarize
+  - what is portugal
+  - how does portugal
+tools_required:
+  - web_search
+  - web_fetch
+  - kb_append
+pipeline: [portugal_life]
+steps:
+  - id: search
+    type: tool
+    action: web_search
+    label: Searching online
+    query_template: "{user_message} Portugal contact phone number site:*.pt"
+    output_var: search_results
+
+  - id: validate_search
+    type: condition
+    check: "{search_results}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: read_source
+    type: tool
+    action: web_fetch
+    label: Reading source page
+    params:
+      url: "{first_result_url}"
+    output_var: page_content
+
+  - id: extract
+    type: agent
+    agent: portugal_life
+    label: Extracting contact details
+    inject_context: [search_results, page_content]
+    prompt: |
+      Extract contact information from the research results for: "{user_message}"
+
+      Format as a clear contact card:
+      - Entity name
+      - Phone number(s)
+      - Address (if found)
+      - Opening hours (if found)
+      - Language of service (if known)
+      - Website/URL
+      - Notes or tips
+
+      Also format as a YAML block for saving, like:
+      ```
+      - name: Entity Name
+        phone: "+351 xxx xxx xxx"
+        hours: "Mon-Fri 9:00-17:00"
+        url: "https://..."
+        notes: "Portuguese only"
+      ```
+
+      If you could not find reliable contact information, say so clearly.
+    output_var: contact_info
+
+  - id: confirm_save
+    type: human
+    label: Confirming save
+    question: |
+      {contact_info}
+
+      Should I save this to my knowledge base for future reference?
+
+  - id: save_to_kb
+    type: tool
+    action: kb_append
+    label: Saving to knowledge base
+    params:
+      file_path: "systems/personal/B-brain/portugal-bureaucracy/known-contacts.md"
+      content: "{contact_info}"
+    output_var: save_result
+
+  - id: confirm
+    type: agent
+    agent: portugal_life
+    label: Confirming save
+    inject_context: [contact_info, save_result]
+    prompt: |
+      Confirm to the user that you found and saved the contact info.
+      Present the key details (name, phone, hours) clearly and concisely.
+      Keep it brief — Telegram format.
+output_format: text

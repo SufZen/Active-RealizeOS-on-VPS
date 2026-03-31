@@ -1,0 +1,73 @@
+name: weekly_digest
+status: active
+version: "2.0"
+description: |
+  Auto-compile week's calendar events, emails, and tasks into executive summary.
+  Use for Monday planning, Friday wrap-ups, or weekly reviews.
+systems: [realization, burtucala, arena, personal]
+task_type: productivity
+triggers:
+  - weekly digest
+  - week summary
+  - summarize my week
+  - what happened this week
+  - weekly review
+  - monday planning
+  - friday wrap up
+  - week in review
+negative_triggers:
+  - daily briefing
+  - morning briefing
+tools_required:
+  - calendar_list_events
+  - gmail_search
+pipeline: [orchestrator]
+steps:
+  - id: calendar_review
+    type: tool
+    action: calendar_list_events
+    label: Reviewing calendar
+    params:
+      time_range: "this_week"
+    output_var: calendar_events
+
+  - id: email_scan
+    type: tool
+    action: gmail_search
+    label: Scanning important emails
+    params:
+      query: "is:important newer_than:7d"
+      max_results: 20
+    output_var: email_highlights
+
+  - id: compile
+    type: agent
+    agent: orchestrator
+    label: Compiling weekly digest
+    inject_context: [calendar_events, email_highlights]
+    prompt: |
+      Compile a weekly digest from the calendar events and email highlights.
+
+      Structure:
+      WEEKLY DIGEST
+
+      HIGHLIGHTS
+      - Top 3-5 most important things from this week
+
+      BY VENTURE
+      Realization: [relevant items]
+      Burtucala: [relevant items]
+      MarvelousCreations: [relevant items]
+      Personal: [relevant items]
+
+      ACTION ITEMS
+      - Outstanding tasks or follow-ups needed
+
+      UPCOMING WEEK
+      - Key meetings and deadlines for next 7 days
+
+      PENDING RESPONSES
+      - Emails or messages awaiting reply (older than 48 hours)
+
+      Be concise. Prioritize actionable items over informational ones.
+output_format: structured_report

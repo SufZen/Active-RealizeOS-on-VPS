@@ -1,0 +1,47 @@
+name: system-status
+status: active
+version: "1.0"
+description: |
+  Reports the current status of the RealizeOS system — active systems, agents, skills, and engine health.
+  Use when user asks about system status, what systems are running, which agents are active, or how the engine is configured.
+  Do NOT use for code changes or troubleshooting (use builder agent directly).
+system: realizeos
+task_type: status_report
+triggers:
+  - system status
+  - what systems are running
+  - which agents are active
+  - show me the status
+  - engine status
+  - realizeos status
+  - what's configured
+  - what systems do i have
+  - how is the system
+  - status report
+negative_triggers:
+  - fix the bug
+  - add a feature
+  - build something
+pipeline: [orchestrator]
+steps:
+  - id: status_check
+    type: agent
+    agent: orchestrator
+    label: Generating system status report
+    prompt: |
+      Generate a RealizeOS system status report.
+
+      Based on what you know about the system configuration:
+
+      1. **Active Systems:** List all 8 configured systems with their key agents
+      2. **Shared Layer:** Confirm shared identity and shared agents
+      3. **Skills Status:** Count skills per system (shared + system-specific)
+      4. **LLM Configuration:** Current routing table (task type → model)
+      5. **Channels:** Active channels and ports
+      6. **Knowledge Base Health:** Rate each system's KB (Strong / Moderate / Weak)
+
+      Format as a clean status dashboard. Use markdown tables.
+      Flag any gaps or items needing attention.
+    output_var: status_report
+
+output_format: document

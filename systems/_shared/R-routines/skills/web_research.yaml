@@ -1,0 +1,65 @@
+name: web_research
+status: active
+version: "2.0"
+description: |
+  Deep web research on any topic with source citations.
+  Use when user asks to research, look up, or find information online.
+  Do NOT use for domain-specific queries: deal analysis (use deal_pipeline),
+  property search (use property_search), brand review, competitor analysis, or Portugal questions.
+systems: [realization, burtucala, arena, personal]
+task_type: web_research
+triggers:
+  - research online
+  - find out about online
+  - look up online
+  - search the web for
+  - what's the latest on
+  - deep dive on
+  - investigate online
+  - find information about
+  - general web research
+negative_triggers:
+  - deal
+  - property
+  - brand
+  - competitor analysis
+  - portugal
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [orchestrator]
+steps:
+  - id: search
+    type: tool
+    action: web_search
+    label: Searching the web
+    query_template: "{user_message}"
+    output_var: search_results
+
+  - id: validate_search
+    type: condition
+    check: "{search_results}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: read_top
+    type: tool
+    action: web_fetch
+    label: Reading top result
+    params:
+      url: "{first_result_url}"
+    output_var: page_content
+
+  - id: synthesize
+    type: agent
+    agent: orchestrator
+    label: Synthesizing findings
+    inject_context: [search_results, page_content]
+    prompt: |
+      Based on the web research results below, provide a thorough answer to:
+      "{user_message}"
+
+      Include key findings, cite sources with URLs, and note if any info seems
+      outdated or conflicting. Be factual and concise.
+output_format: structured_report

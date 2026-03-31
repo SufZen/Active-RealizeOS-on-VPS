@@ -1,0 +1,80 @@
+name: portugal-bureaucracy
+status: active
+version: "1.0"
+description: |
+  Step-by-step guidance for Portuguese bureaucratic processes — taxes, property registry, permits, healthcare, banking, utilities, social security, notary, and company registrations.
+  Use when user asks about filing taxes, IRS deadlines, AT portal, câmara permits, finanças, SNS appointments, caderneta predial, procuração, IMI, segurança social, utilities transfer, EDP, wire transfers from Portugal, certidão de matrícula, registo comercial, cartão cidadão, IRN, eJustiça, or any Portuguese government process.
+  Do NOT use for real estate deal analysis (use arena or burtucala agents), for content creation about Portugal (use burtucala writer), or for investment questions.
+system: personal
+task_type: knowledge_retrieval
+triggers:
+  - file taxes
+  - IRS deadline
+  - modelo 3
+  - AT portal
+  - finanças
+  - câmara permit
+  - câmara municipal
+  - planning permission
+  - licença de obras
+  - SNS appointment
+  - health center
+  - centro de saúde
+  - caderneta predial
+  - procuração
+  - power of attorney
+  - IMI
+  - property tax
+  - segurança social
+  - employer contributions
+  - SS contributions
+  - utilities transfer
+  - EDP
+  - SMAS water
+  - wire transfer Portugal
+  - international payment
+  - certidão de matrícula
+  - registo comercial
+  - cartão cidadão
+  - IRN
+  - eJustiça
+  - notary Portugal
+  - escritura
+  - conservatória
+  - registo predial
+  - bureaucracy Portugal
+  - how do I
+  - como faço
+  - processo
+  - certidão
+  - declaração
+negative_triggers:
+  - real estate deal
+  - property investment analysis
+  - content about Portugal
+  - blog post
+  - write article
+pipeline: [portugal-life]
+steps:
+  - id: kb_lookup
+    type: agent
+    agent: portugal-life
+    label: Looking up Portuguese process guide
+    prompt: |
+      User needs help with a Portuguese bureaucratic process: "{user_message}"
+
+      Search the knowledge base at `B-brain/portugal-bureaucracy/` for the relevant how-to guide.
+
+      Provide:
+      1. **What you need to do** — clear, step-by-step instructions for this specific situation
+      2. **Documents required** — exact checklist for this case
+      3. **Timeline & cost** — realistic expectations
+      4. **Key contacts** — specific phone numbers, websites, or offices relevant to Setúbal
+      5. **Watch out for** — the most common mistakes for this specific process
+
+      Be specific to Asaf's situation: Portuguese citizen, multi-property owner in Setúbal/Lisbon, employer (HomeAid with ~5 staff), active in property transactions, foreign income from Israel and Italy.
+
+      If the question could trigger a phone call or action, suggest using the `contact` skill to have the agent make the call or send a message on his behalf.
+    output_var: guidance
+
+output_format: document

@@ -1,0 +1,89 @@
+name: email_drafter
+status: active
+version: "2.0"
+channel: email
+description: |
+  Drafts and sends professional emails with context-aware tone and structure.
+  Use when user asks to draft, write, compose, send, or reply to an email.
+  Do NOT use for LinkedIn posts or document generation.
+systems: [realization, burtucala, arena, personal]
+task_type: email
+triggers:
+  - draft email
+  - write email
+  - compose email
+  - email to
+  - reply to email
+  - respond to email
+  - draft a reply
+  - email response
+  - send to email
+  - send to my email
+  - send via email
+  - email me
+  - send it to my email
+negative_triggers:
+  - linkedin
+  - google doc
+  - document
+tools_required: [gmail_send]
+pipeline: [orchestrator]
+steps:
+  - id: analyze_context
+    type: agent
+    agent: orchestrator
+    label: Analyzing email context
+    prompt: |
+      Analyze this email request: "{user_message}"
+
+      Determine:
+      1. Email type (cold outreach, follow-up, reply, formal request, informal update)
+      2. Recipient relationship (client, partner, investor, colleague, vendor)
+      3. Desired tone (formal, professional-friendly, casual)
+      4. Key points to convey
+      5. Any urgency indicators
+      6. Recipient email address (if mentioned)
+
+      IMPORTANT: Extract the recipient email address if provided. If sending to Asaf,
+      use asaf@realization.co.il
+
+      Output a brief analysis. Include a line:
+      RECIPIENT: [email address or "unknown"]
+    output_var: email_context
+
+  - id: draft
+    type: agent
+    agent: orchestrator
+    label: Drafting email
+    inject_context: [email_context]
+    prompt: |
+      Draft the email based on the context analysis.
+
+      Request: "{user_message}"
+
+      Write the email the way a real person would -- natural, clear, and direct.
+      No bullet points or section headers in the email body. Write in flowing
+      paragraphs like you would in a real email. Keep it under 150 words unless
+      the content genuinely requires more. Match the tone to the relationship
+      (formal for new contacts, friendly for colleagues). Get to the point in
+      the first sentence.
+
+      Format your response EXACTLY as:
+      TO: [recipient email]
+      SUBJECT: [subject line]
+      BODY:
+      [email body]
+
+      Best regards,
+      Asaf
+    output_var: draft
+
+  - id: send_email
+    type: tool
+    action: gmail_send
+    label: Sending email
+    params:
+      to: "{recipient_email}"
+      subject: "{email_subject}"
+      body: "{email_body}"
+output_format: text

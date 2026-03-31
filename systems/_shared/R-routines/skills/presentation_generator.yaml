@@ -1,0 +1,101 @@
+name: presentation_generator
+status: active
+version: "3.0"
+description: |
+  Generate professional presentations as Google Slides.
+  Use for LP reports, deal dossiers, strategy decks, pitch decks.
+  Creates real slide decks via Google Slides API.
+systems: [realization, burtucala, arena]
+task_type: presentation
+triggers:
+  - create a presentation
+  - make a deck
+  - generate slides
+  - presentation about
+  - slide deck for
+  - visual deck
+  - powerpoint about
+  - pptx
+  - google slides
+negative_triggers:
+  - investor deck
+  - lp report
+tools_required:
+  - slides_create_presentation
+  - slides_add_content
+pipeline: [orchestrator]
+steps:
+  - id: structure_content
+    type: agent
+    agent: orchestrator
+    label: Structuring presentation content
+    model: claude_opus
+    prompt: |
+      Create a structured presentation outline for: "{user_message}"
+
+      Return a JSON array where each element is a slide object with "title" and "body" keys.
+      The body should use bullet points (one per line, prefixed with "- ").
+
+      Guidelines:
+      - 8-12 slides total
+      - First slide: executive summary / overview
+      - Include data/metrics slides with specific numbers
+      - Include a conclusion and next steps slide
+      - Make content data-driven and professional — no filler slides
+
+      Example format:
+      [
+        {{"title": "Executive Summary", "body": "- Key point 1\n- Key point 2\n- Key metric: $X"}},
+        {{"title": "Market Overview", "body": "- TAM: $X\n- Growth rate: X%\n- Key trend"}}
+      ]
+
+      Return ONLY the JSON array, no additional text.
+    output_var: deck_structure
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Reviewing deck structure
+    inject_context: [deck_structure]
+    review: true
+    prompt: |
+      Review this presentation structure (JSON array of slides):
+      {deck_structure}
+
+      Check:
+      1. Is the narrative flow logical?
+      2. Are there enough data points?
+      3. Is the content professional and on-brand?
+      4. Are there filler slides that should be removed?
+      5. Is the conclusion actionable?
+
+      Return the approved/refined JSON array of slides in the same format.
+      Return ONLY the JSON array.
+    output_var: final_structure
+
+  - id: create_presentation
+    type: tool
+    tool: slides_create_presentation
+    label: Creating Google Slides presentation
+    params:
+      title: "Presentation"
+    output_var: presentation_meta
+
+  - id: add_slides
+    type: tool
+    tool: slides_add_content
+    label: Adding slides content
+    params:
+      presentation_id: "{presentation_meta.presentationId}"
+      slides_data: "{final_structure}"
+    output_var: slides_result
+
+  - id: confirm
+    type: human
+    question: |
+      Presentation created with {slides_result.slides_added} slides.
+
+      View it here: {slides_result.webViewLink}
+
+      Would you like me to refine any slides or share the presentation?
+output_format: plain

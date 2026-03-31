@@ -1,0 +1,38 @@
+name: monthly_review
+status: active
+version: "2.0"
+description: |
+  Produces the monthly personal investment committee review with performance,
+  thesis changes, and pending policy updates.
+system: personal-investments
+task_type: financial
+triggers:
+  - monthly investment review
+  - portfolio committee
+  - monthly portfolio review
+  - monthly investment committee
+steps:
+  - id: committee_pack
+    type: agent
+    agent: investment_cio
+    extra_context_files:
+      - systems/personal-investments/F-foundations/investment-policy.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+      - systems/personal-investments/B-brain/account-registry.md
+      - systems/personal-investments/I-insights/thesis-log.md
+      - systems/personal-investments/I-insights/decision-log.md
+      - systems/personal-investments/I-insights/performance-review.md
+      - systems/_shared/R-routines/templates/monthly-investment-committee.md
+    prompt: |
+      Produce a MONTHLY PERSONAL INVESTMENT REVIEW pack for:
+      "{user_message}"
+  - id: risk_pack_review
+    type: agent
+    agent: risk_controller
+    inject_context: [committee_pack]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the committee pack and add a final risk and governance note.
+output_format: structured_report

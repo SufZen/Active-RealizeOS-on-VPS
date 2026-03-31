@@ -1,0 +1,13 @@
+name: brand_review
+status: active
+system: realization
+description: |
+  Reviews Realization brand consistency across touchpoints using strategist, copywriter, and gatekeeper.
+  Use when user wants a brand audit, voice consistency check, or brand review.
+task_type: brand
+pipeline: [strategist, copywriter, gatekeeper]
+triggers:
+  - review our brand
+  - brand audit
+  - check brand consistency
+  - voice consistency

@@ -1,0 +1,101 @@
+name: social_publish
+status: active
+version: "2.0"
+description: |
+  Adapts and publishes content to social media platforms (LinkedIn, Twitter/X).
+  Content is always adapted to platform conventions and character limits.
+  ALWAYS requires approval — social posts are never auto-published.
+systems: [realization, burtucala, arena]
+task_type: content
+triggers:
+  - publish to linkedin
+  - post on linkedin
+  - linkedin post
+  - post on twitter
+  - tweet this
+  - share on social
+  - social media post
+  - publish social
+  - post this on social
+negative_triggers:
+  - social analytics
+  - linkedin analytics
+  - social engagement
+tools_required:
+  - linkedin_post
+  - twitter_post
+pipeline: [copywriter, gatekeeper]
+steps:
+  - id: adapt_content
+    type: agent
+    agent: copywriter
+    label: Adapting content for platform
+    prompt: |
+      Adapt this content for social media publishing: "{user_message}"
+
+      Determine which platform the user wants to post to. If they mention
+      "linkedin", create only the LinkedIn version. If they mention "twitter"
+      or "tweet", create only the Twitter version. If unclear, create BOTH.
+
+      **LinkedIn version** (max 3000 chars):
+      - Professional but engaging tone
+      - Use line breaks for readability
+      - Include a hook in the first line
+      - Add relevant hashtags (3-5 max)
+      - End with a call to engage (question or invitation)
+
+      **Twitter/X version** (max 280 chars):
+      - Concise and punchy
+      - Include 1-2 relevant hashtags
+      - Strong hook
+
+      Format your response as:
+      PLATFORM: linkedin (or twitter, or both)
+
+      LINKEDIN:
+      [linkedin version]
+
+      TWITTER:
+      [twitter version]
+    output_var: adapted_content
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Social media quality review
+    inject_context: [adapted_content]
+    review: true
+    prompt: |
+      Review these social media posts for:
+      1. Brand voice consistency
+      2. No typos or grammatical errors
+      3. Appropriate tone for each platform
+      4. Character limits respected
+      5. No sensitive or controversial content
+      6. Hashtag relevance
+
+      Provide the final versions, making corrections if needed.
+      Keep the PLATFORM:, LINKEDIN: and TWITTER: format.
+    output_var: final_content
+
+  - id: publish_linkedin
+    type: tool
+    action: linkedin_post
+    label: Publishing to LinkedIn
+    params:
+      text: "{final_content}"
+    output_var: linkedin_result
+    condition: "linkedin"
+    condition_field: adapted_content
+
+  - id: publish_twitter
+    type: tool
+    action: twitter_post
+    label: Publishing to Twitter/X
+    params:
+      text: "{final_content}"
+    output_var: twitter_result
+    condition: "twitter"
+    condition_field: adapted_content
+
+output_format: plain

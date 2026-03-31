@@ -1,0 +1,48 @@
+name: portfolio_briefing
+version: "2.0"
+description: "Generate a cross-system portfolio briefing with status, priorities, and action items"
+task_type: complex
+triggers:
+  - portfolio briefing
+  - daily briefing
+  - morning briefing
+  - venture status
+  - all systems status
+  - ecosystem overview
+  - portfolio overview
+  - give me a briefing
+  - what's happening across ventures
+negative_triggers:
+  - only realization
+  - only burtucala
+  - only arena
+pipeline: [orchestrator]
+steps:
+  - id: briefing
+    type: agent
+    agent: orchestrator
+    label: "Generate portfolio briefing from all state maps"
+    extra_context_files:
+      - systems/realization/R-routines/state-map.md
+      - systems/burtucala/R-routines/state-map.md
+      - systems/arena/R-routines/state-map.md
+      - systems/homeaid/R-routines/state-map.md
+      - systems/mioliving_partnership/R-routines/state-map.md
+      - systems/personal/R-routines/state-map.md
+      - systems/personal-investments/R-routines/state-map.md
+      - systems/company-investments/R-routines/state-map.md
+      - systems/realizeos/R-routines/state-map.md
+    prompt: |
+      Generate a concise portfolio briefing for Asaf. Read all state maps provided
+      and synthesize into a structured briefing:
+
+      1. **Portfolio Pulse** — One paragraph overall status
+      2. **Per-Venture Status** — For each venture: current phase, top priority, next action
+      3. **Cross-Venture Synergies** — Any opportunities between ventures
+      4. **Attention Needed** — Blockers, risks, or decisions needed today
+      5. **This Week's Focus** — Top 3 recommended priorities across all ventures
+
+      Be direct. No fluff. Lead with what matters most.
+
+      User request: {user_message}
+output_format: text

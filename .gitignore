@@ -1,0 +1,36 @@
+# Secrets — never commit these
+.env
+setup.yaml
+
+# Data
+data/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+.credentials/
+
+# IDE / tool configs
+.claude/
+.obsidian/
+.autobuild/
+.playwright-mcp/
+.firecrawl/
+
+# Node modules
+node_modules/
+
+# Temp files
+ruff_out.txt
+ruff_report.txt
+pytest_report.txt
+test_output.txt

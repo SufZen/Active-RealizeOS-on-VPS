@@ -1,0 +1,20 @@
+name: property_brochure
+status: active
+system: realization
+description: |
+  Generates multilingual property marketing brochure (PT/EN/HE).
+  Use when user asks to create a brochure, flyer, or marketing materials for a property.
+  Do NOT use for Idealista listing copy (use listing_optimizer).
+task_type: marketing
+pipeline: [listing-specialist, writer, reviewer]
+triggers:
+  - create brochure
+  - property brochure
+  - marketing materials
+  - property flyer
+  - hebrew brochure
+  - property dossier
+negative_triggers:
+  - idealista listing
+  - blog post
+  - newsletter

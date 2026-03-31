@@ -1,0 +1,20 @@
+name: property_performance
+status: active
+system: realization
+description: |
+  Analyzes property performance data and generates diagnostic with recommendations.
+  Use when user asks to review metrics, understand why a property isn't selling, or analyze listing performance.
+  Do NOT use for deal underwriting (use Burtucala deal_pipeline).
+task_type: analysis
+pipeline: [market-analyst, reviewer]
+triggers:
+  - review performance
+  - listing performance
+  - property analytics
+  - why no contacts
+  - sales analysis
+  - portfolio review
+negative_triggers:
+  - deal analysis
+  - underwriting
+  - golden rating

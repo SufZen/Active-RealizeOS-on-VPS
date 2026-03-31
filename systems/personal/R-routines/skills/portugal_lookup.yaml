@@ -1,0 +1,77 @@
+name: portugal_lookup
+status: active
+version: "2.0"
+description: |
+  Researches Portugal bureaucracy, legal, and life questions with web sources.
+  Use when user asks informational questions about Portugal (laws, systems, guides, visas).
+  Do NOT use for action-oriented tasks like calling, scheduling, or filing (use pt_secretary).
+system: personal
+task_type: general
+triggers:
+  - portugal law
+  - portuguese bureaucracy
+  - how to in portugal
+  - portugal healthcare system
+  - portugal banking rules
+  - portuguese government portal
+  - eportugal guide
+  - portugal utility guide
+  - portugal insurance options
+  - portugal driving license process
+  - portugal rental rules
+  - golden visa info
+  - d7 visa info
+  - portugal tax system
+  - arrendamento rules
+  - contrato trabalho guide
+negative_triggers:
+  - call edp
+  - call finanças
+  - renew residency
+  - file taxes
+  - pay tax
+  - schedule appointment
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [portugal_life]
+steps:
+  - id: search
+    type: tool
+    action: web_search
+    label: Searching Portuguese sources
+    query_template: "{user_message} Portugal {today}"
+    output_var: search_results
+
+  - id: validate_search
+    type: condition
+    check: "{search_results}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: read_source
+    type: tool
+    action: web_fetch
+    label: Reading source page
+    params:
+      url: "{first_result_url}"
+    output_var: page_content
+
+  - id: synthesize
+    type: agent
+    agent: portugal_life
+    label: Synthesizing answer
+    inject_context: [search_results, page_content]
+    prompt: |
+      You are pt-secretary, Asaf's Portuguese bureaucracy agent.
+
+      Answer this Portugal-related question: "{user_message}"
+
+      Use the web research to provide accurate, current information.
+      Include: official process/requirements, typical timeline, costs,
+      practical tips, and source URLs. Flag if information may be outdated.
+
+      Always include relevant portal URLs and phone numbers from your
+      knowledge base.
+output_format: text

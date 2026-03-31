@@ -1,0 +1,73 @@
+name: feature-planning
+status: active
+version: "1.0"
+description: |
+  Plans new RealizeOS features or improvements — requirements analysis, architecture design, and implementation roadmap.
+  Use when user wants to add a feature, improve the engine, plan a new capability, or design a system change.
+  Do NOT use for bug fixes (use builder agent directly) or for user-facing content.
+system: realizeos
+task_type: product_planning
+triggers:
+  - add a feature
+  - plan a feature
+  - i want to build
+  - new capability
+  - improve the engine
+  - add to realizeos
+  - feature request
+  - how do we add
+  - design a new
+  - system improvement
+  - roadmap item
+  - plan the implementation
+negative_triggers:
+  - fix a bug
+  - write a blog post
+  - create content
+pipeline: [orchestrator, builder]
+steps:
+  - id: requirements
+    type: agent
+    agent: orchestrator
+    label: Defining requirements
+    prompt: |
+      Analyze this RealizeOS feature request: "{user_message}"
+
+      Define:
+      1. Feature name and one-line description
+      2. User story: As [user], I want [feature] so that [benefit]
+      3. Acceptance criteria (3-5 specific, testable criteria)
+      4. Affected components: Which engine files/modules will change?
+      5. Dependencies: Does this require new libraries, APIs, or config?
+      6. Priority: P1 (critical), P2 (important), P3 (nice-to-have)
+
+      Be specific and technical where needed.
+    output_var: requirements
+
+  - id: architecture
+    type: agent
+    agent: builder
+    label: Designing implementation approach
+    inject_context: [requirements]
+    prompt: |
+      Design the implementation approach for this RealizeOS feature.
+
+      RealizeOS architecture context:
+      - Python engine in `realize_core/`
+      - Config: `realize_core/config.py` (YAML loading, agent discovery)
+      - Prompt: `realize_core/prompt/builder.py` (12-layer assembly)
+      - Skills: `realize_core/skills/detector.py` (YAML v1+v2)
+      - LLM: `realize_core/llm/router.py` + `registry.py`
+      - API: `realize_api/` (FastAPI)
+      - Message flow: Channel → base_handler → skill check → agent → LLM
+
+      Provide:
+      1. Implementation approach (which files to modify/create)
+      2. Step-by-step implementation plan (ordered tasks)
+      3. Testing approach
+      4. Estimated complexity: S/M/L
+
+      Reference existing patterns where possible.
+    output_var: architecture
+
+output_format: document

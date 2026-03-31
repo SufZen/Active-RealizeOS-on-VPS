@@ -1,0 +1,70 @@
+name: property_search
+status: active
+version: "2.0"
+description: |
+  Searches Portuguese real estate portals (idealista, imovirtual) for investment opportunities
+  and analyzes them using the Golden Rating framework.
+  Use when user asks to find, search, or browse property listings in Portugal.
+  Do NOT use for evaluating a specific deal already identified (use deal_pipeline).
+system: burtucala
+task_type: deal_analysis
+triggers:
+  - find properties
+  - search properties
+  - property search
+  - listings in
+  - apartments in
+  - houses in
+  - real estate in
+  - imovirtual
+  - idealista
+negative_triggers:
+  - evaluate this deal
+  - rate this deal
+  - score this property
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [deal_analyst, gatekeeper]
+steps:
+  - id: search
+    type: tool
+    action: web_search
+    label: Searching property portals
+    query_template: "{user_message} site:idealista.pt OR site:imovirtual.com"
+    output_var: search_results
+
+  - id: validate_search
+    type: condition
+    check: "{search_results}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: read_listings
+    type: tool
+    action: web_fetch
+    label: Reading listing details
+    params:
+      url: "{first_result_url}"
+    output_var: listing_content
+
+  - id: analyze
+    type: agent
+    agent: deal_analyst
+    label: Deal analysis
+    inject_context: [search_results, listing_content]
+    prompt: |
+      Analyze the property search results for: "{user_message}"
+
+      For each listing found, extract: price, location, size, condition.
+      Apply the Golden Rating framework (location, price/sqm, condition,
+      rental yield potential, value-add opportunity). Score 1-5 on each.
+      Flag the best opportunities.
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    review: true
+output_format: structured_report

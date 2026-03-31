@@ -1,0 +1,22 @@
+name: content_pipeline
+status: active
+system: realization
+description: |
+  Creates content with Realization brand voice and gatekeeper review.
+  Use when user asks to write posts, articles, or newsletters.
+  Do NOT use for LinkedIn posts (use linkedin_engage) or competitor analysis.
+task_type: content
+pipeline: [copywriter, gatekeeper]
+triggers:
+  - write a post
+  - create content
+  - draft article
+  - write content
+  - blog post
+  - newsletter article
+  - create a post
+  - write about
+negative_triggers:
+  - linkedin
+  - competitor
+  - social media

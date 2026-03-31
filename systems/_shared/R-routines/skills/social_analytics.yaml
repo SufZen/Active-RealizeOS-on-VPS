@@ -1,0 +1,73 @@
+name: social_analytics
+status: active
+version: "2.0"
+description: |
+  Analyzes social media presence and content performance across platforms.
+  Use when user asks about social analytics, content performance, engagement metrics, or social media reports.
+  Do NOT use for creating social media posts (use linkedin_engage or content_pipeline).
+systems: [realization, burtucala]
+task_type: social_analytics
+triggers:
+  - social analytics
+  - content performance
+  - social media analysis
+  - engagement analysis
+  - how is our social
+  - social media report
+  - content metrics
+negative_triggers:
+  - write a post
+  - create content
+  - linkedin post
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [strategist, gatekeeper]
+steps:
+  - id: search_presence
+    type: tool
+    action: web_search
+    label: Analyzing social presence
+    query_template: "{user_message} social media analytics performance"
+    output_var: social_data
+
+  - id: validate_search
+    type: condition
+    check: "{social_data}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: fetch_insights
+    type: tool
+    action: web_fetch
+    label: Fetching detailed insights
+    params:
+      url: "{first_result_url}"
+    output_var: page_insights
+
+  - id: analyze
+    type: agent
+    agent: strategist
+    label: Generating analytics report
+    inject_context: [social_data, page_insights]
+    prompt: |
+      Analyze the social media data for: "{user_message}"
+
+      Provide a structured report with:
+      1. **Platform Overview** — presence across LinkedIn, Instagram, etc.
+      2. **Content Performance** — what types of content resonate
+      3. **Audience Insights** — who engages and when
+      4. **Competitor Benchmarks** — how we compare
+      5. **Recommendations** — actionable next steps
+
+      Use available data. If specific metrics aren't available, provide
+      industry benchmarks and strategic recommendations.
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Reviewing analytics quality
+    inject_context: [analyze]
+    review: true
+output_format: structured_report

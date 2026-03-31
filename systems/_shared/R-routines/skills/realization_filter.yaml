@@ -1,0 +1,65 @@
+name: realization_filter
+status: active
+version: "1.0"
+description: |
+  Runs the 3-question Realization Filter on any proposed project, opportunity,
+  or energy investment. Produces a structured go/no-go recommendation.
+  Use when evaluating whether to enter a new project, build a tool, or invest energy.
+systems: [realization, realization-il, burtucala, arena, realizeos, company-investments]
+task_type: strategy
+triggers:
+  - should we do this
+  - evaluate this opportunity
+  - new project filter
+  - realization filter
+  - run the filter
+  - is this worth pursuing
+  - should I take this on
+  - opportunity assessment
+negative_triggers:
+  - listing
+  - property performance
+  - lead response
+tools_required: []
+pipeline: [orchestrator]
+steps:
+  - id: filter_intro
+    type: agent
+    agent: orchestrator
+    label: Running the Realization Filter
+    prompt: |
+      Apply the Realization Filter to the following opportunity or project:
+      "{user_message}"
+
+      Answer each of the 3 filter questions with a clear YES/NO and reasoning:
+
+      ## 1. The Potential Test
+      Is there a massive gap between the current wasted/underperforming state
+      and the maximum potential we can create from it?
+      - What is the current state?
+      - What is the Highest and Best Use?
+      - How large is the gap?
+
+      ## 2. The Agenda Test
+      Does this action constitute optimization and value creation (urban healing,
+      systemic improvement, sustainable development), or does it harm the
+      environment or add no meaningful value?
+      - What value does this add to the urban/systemic environment?
+      - Any ESG concerns?
+
+      ## 3. The Role Test
+      Can the Architect build a "pipe" here and hand it off for execution,
+      or does this pull into gray operational work that drains learning energy?
+      - Can this be systematized and handed off?
+      - What does the handoff look like?
+
+      ## Verdict
+      - If all 3 pass: PROCEED with confidence. State the recommended next step.
+      - If 1-2 pass: PROCEED WITH CAUTION. State what needs to change.
+      - If 0 pass: PASS. Explain why this is not aligned.
+
+      Remember: the manifesto is a compass, not a cage. If the opportunity
+      is exceptional despite not fitting perfectly, say so and explain why
+      it might still be worth pursuing.
+
+output_format: structured_report

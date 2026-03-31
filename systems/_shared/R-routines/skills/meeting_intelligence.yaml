@@ -1,0 +1,122 @@
+name: meeting_intelligence
+status: active
+version: "3.0"
+description: |
+  Fetch meeting summaries from the Fireflies Google Drive folder,
+  analyze key points, extract action items, and optionally create tasks.
+  Use when user asks about meeting notes, transcripts, or action items.
+systems: [realization, burtucala, arena, personal]
+task_type: meeting
+triggers:
+  - meeting transcript
+  - meeting notes
+  - what was discussed
+  - action items from meeting
+  - meeting summary
+  - fireflies transcript
+  - summarize the meeting
+  - what happened in the meeting
+  - recent meetings
+  - last meeting
+negative_triggers:
+  - meeting prep
+  - prepare for meeting
+  - schedule a meeting
+tools_required:
+  - drive_list_folder
+  - drive_read_content
+pipeline: [orchestrator]
+steps:
+  - id: list_meetings
+    type: tool
+    tool: drive_list_folder
+    label: Listing recent meeting summaries
+    params:
+      folder_id: "1MjBKBjOaETm0gzqgG6HrUO-YCBLBK4uq"
+      max_results: 10
+    output_var: meeting_files
+
+  - id: validate_files
+    type: condition
+    condition: "len(meeting_files) > 0 if isinstance(meeting_files, list) else bool(meeting_files)"
+    on_true: select_meeting
+    on_false: no_meetings
+    label: Checking for meeting files
+
+  - id: no_meetings
+    type: agent
+    agent: orchestrator
+    label: No meetings found
+    prompt: |
+      No meeting summaries were found in the Fireflies Drive folder.
+      Tell the user there are no recent meeting transcripts available.
+      Ask if they'd like to paste a transcript manually instead.
+    output_var: error_message
+
+  - id: select_meeting
+    type: agent
+    agent: orchestrator
+    label: Selecting the right meeting
+    inject_context: [meeting_files]
+    prompt: |
+      The user asked: "{user_message}"
+
+      Here are the recent meeting summaries from the Fireflies Drive folder:
+      {meeting_files}
+
+      Based on the user's request, identify the most relevant meeting file.
+      If the user asked about a specific meeting, match by name or date.
+      If they asked about "the last meeting" or "recent meetings", pick the
+      most recently modified file.
+
+      Return ONLY the file ID of the selected meeting. Format: FILE_ID:<the_id>
+    output_var: selected_file_id
+
+  - id: read_meeting
+    type: tool
+    tool: drive_read_content
+    label: Reading meeting summary
+    params:
+      file_id: "{selected_file_id}"
+      mime_type: "text/plain"
+    output_var: meeting_content
+
+  - id: analyze
+    type: agent
+    agent: orchestrator
+    label: Analyzing meeting content
+    inject_context: [meeting_content]
+    prompt: |
+      From the meeting transcript/summary below, produce a structured analysis:
+
+      {meeting_content}
+
+      MEETING SUMMARY
+      Date: [date]
+      Participants: [list]
+      Duration: [if known]
+
+      KEY DECISIONS
+      - [Decision 1]
+      - [Decision 2]
+
+      ACTION ITEMS
+      - [Person]: [Task] — Due: [date if mentioned]
+
+      OPEN QUESTIONS
+      - [Items that need follow-up]
+
+      NEXT STEPS
+      - [What happens next]
+
+      Be concise but don't miss any action items or decisions.
+    output_var: meeting_analysis
+
+  - id: confirm_tasks
+    type: human
+    question: |
+      Meeting analysis complete.
+      {meeting_analysis}
+
+      Would you like me to create tasks for the action items?
+output_format: structured_report

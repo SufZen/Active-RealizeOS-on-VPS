@@ -1,0 +1,69 @@
+name: rebalance_proposal
+status: active
+version: "2.0"
+description: |
+  Produces a policy-aware rebalance or paper-trade proposal for the personal investment system.
+system: personal-investments
+task_type: financial
+triggers:
+  - rebalance proposal
+  - paper trade proposal
+  - portfolio adjustment
+  - allocation change
+steps:
+  - id: market_search
+    type: tool
+    action: web_search
+    query_template: "{user_message} market context {today}"
+    output_var: market_results
+  - id: market_source
+    type: tool
+    action: web_fetch
+    params:
+      url: "{first_result_url}"
+    output_var: market_source
+  - id: proposal
+    type: agent
+    agent: investment_cio
+    inject_context: [market_results, market_source]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/investment-policy.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+      - systems/personal-investments/B-brain/account-registry.md
+      - systems/personal-investments/I-insights/thesis-log.md
+      - systems/personal-investments/I-insights/performance-review.md
+    prompt: |
+      Create a PERSONAL REBALANCE OR PAPER-TRADE PROPOSAL for:
+      "{user_message}"
+
+      The proposal must include:
+      - action summary
+      - policy rule invoked
+      - source data used
+      - confidence
+      - invalidation conditions
+      - approval requirement
+      - expected effect on allocation or risk posture
+  - id: risk_review
+    type: agent
+    agent: risk_controller
+    inject_context: [proposal]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the proposal. Either approve it for paper-mode queueing or block it.
+      State the exact reason if blocked.
+  - id: approval_packet
+    type: agent
+    agent: execution_controller
+    inject_context: [proposal, risk_review]
+    extra_context_files:
+      - systems/_shared/R-routines/templates/rebalance-proposal.md
+      - systems/_shared/R-routines/templates/paper-trade-approval.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+    prompt: |
+      Convert the validated proposal and risk review into an approval-ready packet.
+      Mark it as pending, blocked, or ready for paper execution.
+output_format: structured_report

@@ -1,0 +1,19 @@
+name: strategy_analysis
+status: active
+system: realization
+description: |
+  Performs strategic market and business analysis with quality review.
+  Use when user asks for market analysis, business model review, or positioning analysis.
+  Do NOT use for competitor website analysis (use competitor_analysis).
+task_type: strategy
+pipeline: [strategist, gatekeeper]
+triggers:
+  - analyze the market
+  - strategic analysis
+  - business model
+  - competitive analysis
+  - positioning analysis
+  - market opportunity
+negative_triggers:
+  - competitor website
+  - check what competitors

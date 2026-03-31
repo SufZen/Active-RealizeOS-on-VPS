@@ -1,0 +1,101 @@
+name: deep_property_research
+status: active
+version: "2.0"
+description: |
+  Deep property research using web crawling to extract structured listing data
+  from Idealista, Imovirtual, and other Portuguese property portals.
+  Use when user asks for comprehensive property market research.
+systems: [burtucala]
+task_type: web_research
+triggers:
+  - deep property research
+  - crawl property listings
+  - property market analysis
+  - analyze property listings
+  - property deep dive
+  - market comps research
+  - comparable properties
+negative_triggers:
+  - quick property search
+  - single listing
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [orchestrator]
+steps:
+  - id: search_listings
+    type: tool
+    action: web_search
+    label: Searching property portals
+    query_template: "{user_message} site:idealista.pt OR site:imovirtual.com"
+    output_var: listing_results
+
+  - id: crawl_listings
+    type: agent
+    agent: orchestrator
+    label: Extracting listing data
+    inject_context: [listing_results]
+    prompt: |
+      From the search results, fetch the top 5-10 most relevant property listings.
+      For each listing, extract:
+      - Price (asking price)
+      - Location (municipality, parish)
+      - Property type (apartment, house, land, commercial)
+      - Size (m2, bedrooms, bathrooms)
+      - Condition (new, renovated, to renovate)
+      - Key features (parking, terrace, elevator, pool)
+      - Price per m2
+      - Listing URL
+
+      Use web_fetch to read each listing page and extract this structured data.
+    output_var: listing_data
+
+  - id: market_context
+    type: tool
+    action: web_search
+    label: Gathering market data
+    query_template: "portugal property market prices {user_message} 2025 2026"
+    output_var: market_data
+
+  - id: analyze
+    type: agent
+    agent: orchestrator
+    label: Producing market analysis
+    inject_context: [listing_data, market_data]
+    prompt: |
+      Produce a comprehensive property market analysis:
+
+      MARKET OVERVIEW
+      - Area/location summary
+      - Price range observed
+      - Average price per m2
+
+      COMPARABLE LISTINGS (table format)
+      # | Location | Type | Size | Price | EUR/m2 | Condition | Link
+
+      MARKET TRENDS
+      - Price direction (rising/stable/falling)
+      - Supply indicators (days on market, volume)
+      - Demand signals
+
+      INVESTMENT ANALYSIS
+      - Best value properties identified
+      - Renovation opportunity flags
+      - Rental yield estimates (if applicable)
+
+      RECOMMENDATION
+      - Top 3 properties worth investigating further
+      - Red flags to watch for
+    output_var: analysis
+
+  - id: confirm
+    type: human
+    question: |
+      Property research complete.
+      {analysis}
+
+      Would you like me to:
+      1. Deep-dive into any specific listing?
+      2. Create a deal dossier for a property?
+      3. Save this research to Google Drive?
+output_format: structured_report

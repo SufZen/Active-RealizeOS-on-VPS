@@ -1,0 +1,98 @@
+name: service-quote
+status: active
+version: "2.0"
+description: |
+  Generates a structured HomeAid service quote using the 70/20/10 pricing model.
+  Use when user asks to quote, price, estimate cost, or create a service proposal for any property service.
+  Do NOT use for general service inquiries without a specific scope.
+system: homeaid
+task_type: quoting
+triggers:
+  - quote for
+  - how much would
+  - price for
+  - estimate for
+  - service quote
+  - homeaid quote
+  - cost of cleaning
+  - cost of maintenance
+  - cost of repair
+  - how much to fix
+  - how much for
+  - create a quote
+  - service proposal
+negative_triggers:
+  - general inquiry
+  - what services do you offer
+  - tell me about homeaid
+pipeline: [orchestrator, operations]
+steps:
+  - id: assess_scope
+    type: agent
+    agent: operations
+    label: Assessing service scope
+    prompt: |
+      Assess this HomeAid service request: "{user_message}"
+
+      Determine:
+      1. Service type (cleaning, maintenance, gardening, pool, electrical, plumbing, painting, carpentry, locksmith, security, property management, AC, other)
+      2. Scope: Is it a fixed-price job or hourly rate job?
+      3. Size/complexity: Small (under €200), Medium (€200-€500), Large (above €500)
+      4. Materials: Will materials be required? Client supplies or HomeAid supplies?
+      5. Location: In service area (Lisbon/Setúbal)? If outside area, flag.
+      6. Urgency: Normal scheduling or emergency?
+
+      Output a structured scope assessment.
+    output_var: scope_assessment
+
+  - id: calculate_quote
+    type: agent
+    agent: operations
+    label: Calculating service quote
+    inject_context: [scope_assessment]
+    prompt: |
+      Calculate the HomeAid quote based on the scope assessment.
+
+      HomeAid Pricing Model:
+      - After direct material costs: 70% team / 20% overhead & profit / 10% referral source
+      - Minimum call-out fee applies to all jobs
+      - For hourly jobs: state rate + estimated hours
+      - For fixed jobs: state total price
+      - Material costs: Add to invoice or have client purchase directly
+
+      Warranty included:
+      - Minor repairs: 30-day workmanship warranty
+      - Major trades work: 60-day workmanship warranty
+      - Full installations: 90-day workmanship warranty
+
+      Create a professional quote with:
+      1. Service description
+      2. Scope of work (bullet points)
+      3. Price breakdown (labor + materials if applicable)
+      4. Estimated timeline
+      5. Warranty terms
+      6. Next steps (scheduling)
+
+      Keep the quote clear and professional. No jargon.
+    output_var: quote
+
+  - id: format_quote
+    type: agent
+    agent: orchestrator
+    label: Formatting final quote
+    inject_context: [scope_assessment, quote]
+    prompt: |
+      Format the quote as a clean, professional HomeAid service quote.
+
+      Include:
+      - HomeAid header
+      - Client name (if known from context)
+      - Date
+      - Service summary
+      - Price (clearly stated)
+      - Next steps
+
+      Tone: Professional and approachable. Clear and confident.
+    output_var: final_quote
+
+output_format: document

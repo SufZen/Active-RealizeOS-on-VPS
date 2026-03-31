@@ -1,0 +1,19 @@
+name: owner_report
+status: active
+system: realization
+description: |
+  Generates monthly property owner report with performance data and recommendations.
+  Use when user asks to create a report for a property owner or client update.
+  Do NOT use for investor pitch (use strategy_analysis).
+task_type: report
+pipeline: [market-analyst, writer, reviewer]
+triggers:
+  - owner report
+  - property report
+  - monthly report
+  - client update
+  - owner update
+negative_triggers:
+  - investor pitch
+  - strategy
+  - blog

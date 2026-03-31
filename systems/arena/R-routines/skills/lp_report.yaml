@@ -1,0 +1,14 @@
+name: lp_report
+status: active
+system: arena
+description: |
+  Generates monthly LP management report for Zodiaco (LP) investors.
+  Use when user asks for investor update, LP report, monthly report, or Zodiaco update.
+task_type: investor_report
+pipeline: [capital_sales, finance_controller]
+triggers:
+  - lp update
+  - investor report
+  - monthly report
+  - zodiaco update
+  - lp management report

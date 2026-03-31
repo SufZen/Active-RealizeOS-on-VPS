@@ -1,0 +1,74 @@
+name: brand_audit
+status: active
+version: "2.0"
+description: |
+  Audit online brand presence across platforms for voice consistency,
+  visual identity, and competitive positioning.
+  Use when user asks to audit, check, or review their brand, brand voice, or online presence.
+  Do NOT use for competitor analysis (use deep_competitor_analysis) or for creating brand content.
+systems: [realization, burtucala]
+task_type: brand
+triggers:
+  - brand audit
+  - brand health check
+  - check brand consistency
+  - brand presence review
+  - online brand audit
+  - brand consistency check
+negative_triggers:
+  - brand review
+  - content pipeline
+  - write content
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [strategist, gatekeeper]
+steps:
+  - id: scan_presence
+    type: tool
+    action: web_search
+    label: Scanning online presence
+    query_template: "{user_message} site:linkedin.com OR site:twitter.com"
+    output_var: presence_results
+
+  - id: fetch_profile
+    type: tool
+    action: web_fetch
+    label: Reading profile details
+    params:
+      url: "{first_result_url}"
+    output_var: profile_content
+
+  - id: audit
+    type: agent
+    agent: strategist
+    label: Conducting brand audit
+    inject_context: [presence_results, profile_content]
+    prompt: |
+      Conduct a brand audit for: "{user_message}"
+
+      Evaluate across platforms:
+      1. VOICE CONSISTENCY: Does messaging match the brand voice guide?
+      2. VISUAL IDENTITY: Consistent logo, colors, typography?
+      3. CONTENT QUALITY: Professional, valuable, regular posting?
+      4. COMPETITIVE POSITION: How does it compare to peers?
+
+      Score each dimension (1-10) and provide specific examples.
+
+      Format as:
+      BRAND AUDIT — [Venture]
+      OVERALL SCORE: X/10
+
+      PLATFORM SCORES (table)
+      TOP 3 STRENGTHS
+      TOP 3 ISSUES (with specific examples)
+      RECOMMENDATIONS (prioritized)
+    output_var: audit_report
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    inject_context: [audit_report]
+    review: true
+output_format: structured_report

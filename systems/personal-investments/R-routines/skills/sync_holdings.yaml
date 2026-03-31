@@ -1,0 +1,39 @@
+name: sync_holdings
+status: active
+version: "2.0"
+description: |
+  Reconciles mixed-source holdings inputs and identifies what is missing before
+  the system uses those positions in recommendations.
+system: personal-investments
+task_type: financial
+triggers:
+  - sync holdings
+  - reconcile positions
+  - update portfolio data
+  - import portfolio
+  - holdings refresh
+steps:
+  - id: sync_plan
+    type: agent
+    agent: execution_controller
+    extra_context_files:
+      - systems/personal-investments/B-brain/account-registry.md
+      - systems/personal-investments/B-brain/holdings/README.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+    prompt: |
+      The user asked to sync holdings: "{user_message}".
+
+      Produce a holdings sync response that:
+      - states the expected normalized schema
+      - identifies what source files or pasted tables are still missing
+      - shows how mixed sources will be reconciled
+      - warns that recommendations stay blocked until conflicts are resolved
+  - id: sync_risk_review
+    type: agent
+    agent: risk_controller
+    inject_context: [sync_plan]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the sync response and highlight any data-integrity blockers.
+output_format: text

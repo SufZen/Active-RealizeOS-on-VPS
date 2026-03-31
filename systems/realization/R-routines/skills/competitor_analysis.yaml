@@ -1,0 +1,64 @@
+name: competitor_analysis
+status: active
+version: "2.0"
+description: |
+  Analyzes competitor websites and summarizes their positioning, offerings, and strategy.
+  Use when user asks to research, analyze, or compare a specific competitor.
+  Do NOT use for general market or positioning analysis (use strategy_analysis).
+system: realization
+task_type: strategy
+triggers:
+  - analyze competitor
+  - check what competitors
+  - competitive research
+  - competitor website
+  - compare with competitor
+negative_triggers:
+  - market opportunity
+  - business model
+  - positioning analysis
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [strategist, gatekeeper]
+steps:
+  - id: search
+    type: tool
+    action: web_search
+    label: Searching competitor info
+    query_template: "{user_message} company website portfolio services"
+    output_var: search_results
+
+  - id: validate_search
+    type: condition
+    check: "{search_results}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: read_site
+    type: tool
+    action: web_fetch
+    label: Reading competitor site
+    params:
+      url: "{first_result_url}"
+    output_var: page_content
+
+  - id: analyze
+    type: agent
+    agent: strategist
+    label: Strategic analysis
+    inject_context: [search_results, page_content]
+    prompt: |
+      Analyze this competitor based on the web research:
+      "{user_message}"
+
+      Cover: positioning, service offering, pricing signals, target audience,
+      strengths/weaknesses vs Realization. Be specific with evidence from sources.
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    review: true
+output_format: structured_report

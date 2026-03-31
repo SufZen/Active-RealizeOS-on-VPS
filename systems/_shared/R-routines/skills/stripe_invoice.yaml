@@ -1,0 +1,66 @@
+name: stripe_invoice
+status: active
+version: "2.0"
+description: |
+  Create and send client invoices via Stripe. Handles customer lookup/creation,
+  invoice generation, and sending. Always requires approval before sending.
+systems: [realization, burtucala, arena]
+task_type: invoice
+triggers:
+  - create invoice
+  - send invoice
+  - bill client
+  - invoice for
+  - create a stripe invoice
+  - generate invoice
+  - payment for
+negative_triggers:
+  - process invoice
+  - pay this invoice
+  - invoice status
+tools_required:
+  - stripe_create_invoice
+  - stripe_create_customer
+pipeline: [finance_controller]
+steps:
+  - id: extract_details
+    type: agent
+    agent: orchestrator
+    label: Extracting invoice details
+    prompt: |
+      Extract the invoice details from: "{user_message}"
+
+      Return structured data:
+      CUSTOMER: [name]
+      EMAIL: [email if mentioned]
+      AMOUNT: [amount in EUR]
+      DESCRIPTION: [what is being invoiced]
+      DUE_DATE: [due date if mentioned, default: 30 days]
+      PROJECT: [project reference if mentioned]
+
+      If any critical field is missing (customer, amount), note what's missing.
+    output_var: invoice_details
+
+  - id: check_details
+    type: condition
+    check: "{invoice_details}"
+    branches:
+      "missing": stop
+      default: continue
+
+  - id: create_invoice
+    type: tool
+    action: stripe_create_invoice
+    label: Creating Stripe invoice
+    params:
+      details: "{invoice_details}"
+    output_var: invoice_result
+
+  - id: confirm
+    type: human
+    question: |
+      Invoice created:
+      {invoice_result}
+
+      Send this invoice to the client? (Reply yes/no)
+output_format: plain

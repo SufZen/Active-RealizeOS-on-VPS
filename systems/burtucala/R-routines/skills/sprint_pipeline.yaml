@@ -1,0 +1,71 @@
+name: sprint_pipeline
+status: active
+system: burtucala
+description: |
+  Runs Sprint 0 venture concept diagnostic with quality review.
+  Use when user wants to validate a new venture concept or run a sprint diagnostic.
+  Do NOT use for deal underwriting (use deal_pipeline or deal_underwriting_full).
+task_type: venture_sprint
+pipeline: [venture_builder, reviewer]
+triggers:
+  - sprint 0
+  - venture concept
+  - design a venture
+  - sprint diagnostic
+  - concept validation
+  - venture architecture
+  - space program
+negative_triggers:
+  - deal analysis
+  - underwriting
+  - property search
+steps:
+  - id: load_context
+    type: agent
+    agent: venture_builder
+    label: Loading venture context
+    prompt: |
+      Load the following context:
+      - B-brain/services/sprint-framework.md (sprint structure and deliverables)
+      - B-brain/services/reference-architectures/ (reference examples by venture type)
+      - B-brain/portugal-market/licensing-pathways.md (licensing requirements)
+      - B-brain/portugal-market/capex-planning.md (cost ranges by venture type)
+      - B-brain/services/client-personas.md (who we are building for)
+
+      Extract from the user request: venture type, location, budget range, concept idea.
+      Identify the closest reference architecture.
+    output_var: venture_context
+
+  - id: diagnostic
+    type: agent
+    agent: venture_builder
+    label: Running Sprint 0 diagnostic
+    inject_context: [venture_context]
+    prompt: |
+      Perform a Sprint 0 Diagnostic for this venture concept.
+
+      Produce all Sprint 0 deliverables:
+      1. Concept Validation Report (site-concept fit, market context)
+      2. Licensing Path Summary (required licenses, timeline, bottlenecks)
+      3. Capex Band Estimate (low/mid/high using capex-planning.md ranges)
+      4. Revenue Potential Assessment (model, capacity, comps)
+      5. Go/No-Go Recommendation with reasoning
+      6. Sprint 1 Scope (if Go)
+
+      Use operator voice. Numbers before adjectives. Constraints before options.
+    output_var: diagnostic_output
+
+  - id: review
+    type: agent
+    agent: reviewer
+    label: Quality review
+    inject_context: [diagnostic_output]
+    review: true
+    prompt: |
+      Review this Sprint 0 diagnostic for:
+      1. Are capex estimates realistic and sourced?
+      2. Is the licensing path accurate for this municipality?
+      3. Are revenue assumptions conservative enough?
+      4. Is the Go/No-Go recommendation well-supported?
+      5. Would the client find this actionable?
+output_format: structured_report

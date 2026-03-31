@@ -1,0 +1,38 @@
+name: sync_holdings
+status: active
+version: "2.0"
+description: |
+  Reconciles mixed-source treasury and investment holdings before the company
+  system uses them in recommendations.
+system: company-investments
+task_type: financial
+triggers:
+  - sync holdings
+  - reconcile treasury positions
+  - update treasury data
+  - import company portfolio
+steps:
+  - id: sync_plan
+    type: agent
+    agent: execution_controller
+    extra_context_files:
+      - systems/company-investments/B-brain/account-registry.md
+      - systems/company-investments/B-brain/holdings/README.md
+      - systems/company-investments/F-foundations/authority-matrix.md
+    prompt: |
+      The user asked to sync company holdings: "{user_message}".
+
+      Produce a response that:
+      - states the normalized schema
+      - identifies missing source files or tables
+      - separates operating, reserve, and investable buckets
+      - warns that conflicting data blocks downstream recommendations
+  - id: sync_risk_review
+    type: agent
+    agent: risk_controller
+    inject_context: [sync_plan]
+    extra_context_files:
+      - systems/company-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the sync response and identify governance or data-integrity blockers.
+output_format: text

@@ -1,0 +1,64 @@
+name: service-request
+status: active
+version: "1.0"
+description: |
+  Processes and coordinates HomeAid service requests — triaging urgency, assigning team, and confirming with client.
+  Use when user submits a service request, maintenance issue, or job to schedule.
+  Do NOT use for quoting (use service-quote skill instead).
+system: homeaid
+task_type: service_coordination
+triggers:
+  - schedule a
+  - book a
+  - need someone to
+  - fix the
+  - clean the
+  - maintenance for
+  - arrange service
+  - send a team
+  - service request
+  - broken
+  - not working
+  - needs repair
+negative_triggers:
+  - quote
+  - price
+  - how much
+  - estimate
+pipeline: [operations]
+steps:
+  - id: triage
+    type: agent
+    agent: operations
+    label: Triaging service request
+    prompt: |
+      Triage this HomeAid service request: "{user_message}"
+
+      Determine:
+      1. Service type
+      2. Urgency level: Emergency (same-day), Urgent (within 48h), Standard (within 1 week)
+      3. Skill required: Which team member type can handle this?
+      4. Location confirmed in service area? (Lisbon / Setúbal)
+      5. Client contact information available?
+
+      Output a triage summary.
+    output_var: triage
+
+  - id: coordinate
+    type: agent
+    agent: operations
+    label: Coordinating team assignment
+    inject_context: [triage]
+    prompt: |
+      Based on the triage, coordinate the service response:
+
+      1. Confirm the service type and urgency
+      2. Identify team assignment (skill match)
+      3. Propose scheduling (specific time slot or time window)
+      4. Note any materials needed
+      5. Draft a brief client confirmation message
+
+      Be specific and actionable. Do not leave items open-ended.
+    output_var: coordination
+
+output_format: text

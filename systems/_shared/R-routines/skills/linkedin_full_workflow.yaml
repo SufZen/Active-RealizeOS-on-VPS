@@ -1,0 +1,77 @@
+name: linkedin_full_workflow
+status: active
+version: "2.0"
+description: |
+  Full LinkedIn content workflow: trend research, draft optimization,
+  brand voice check, publish, and performance tracking.
+  Use when user wants to create and publish LinkedIn content with full optimization.
+systems: [realization, burtucala]
+task_type: content
+triggers:
+  - linkedin content workflow
+  - full linkedin post
+  - create and publish on linkedin
+  - linkedin strategy post
+  - linkedin thought leadership
+  - write and post on linkedin
+negative_triggers:
+  - social analytics
+  - linkedin analytics
+  - engagement stats
+tools_required:
+  - web_search
+  - linkedin_post
+pipeline: [copywriter, gatekeeper]
+steps:
+  - id: trend_research
+    type: tool
+    action: web_search
+    label: Researching LinkedIn trends
+    query_template: "LinkedIn trending topics {user_message} 2026"
+    output_var: trend_data
+
+  - id: draft
+    type: agent
+    agent: copywriter
+    label: Drafting LinkedIn post
+    inject_context: [trend_data]
+    prompt: |
+      Create a LinkedIn post about: "{user_message}"
+
+      Use the trend research for context. Follow these rules:
+      - Hook: First line must stop the scroll (question, bold statement, or data point)
+      - Body: 3-5 short paragraphs with line breaks for readability
+      - Value: Teach, reveal, or challenge something — don't just announce
+      - CTA: End with a question that invites genuine discussion
+      - Length: 1,200-1,800 characters
+      - Hashtags: 3-5 relevant ones at the end
+
+      Match the venture's brand voice. No hype, no "I'm excited to announce",
+      no emoji spam, no humble-bragging.
+    output_var: draft_post
+
+  - id: optimize
+    type: agent
+    agent: gatekeeper
+    label: Optimizing for engagement
+    inject_context: [draft_post]
+    review: true
+    prompt: |
+      Review and optimize this LinkedIn post:
+      1. Is the hook compelling enough to stop scrolling?
+      2. Does it provide genuine value (not just self-promotion)?
+      3. Is the brand voice consistent?
+      4. Are hashtags relevant and not overused?
+      5. Is the CTA natural (not "agree?")?
+      6. Any anti-pattern violations?
+
+      Return the final optimized version.
+    output_var: final_post
+
+  - id: publish
+    type: tool
+    action: linkedin_post
+    label: Publishing to LinkedIn
+    params:
+      text: "{final_post}"
+output_format: plain

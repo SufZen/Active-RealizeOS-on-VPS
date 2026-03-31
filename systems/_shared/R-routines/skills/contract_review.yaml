@@ -1,0 +1,80 @@
+name: contract_review
+status: active
+version: "2.0"
+description: |
+  Legal review checklist, risk flags, and clause summary for contracts.
+  Always includes disclaimer that this is not legal advice.
+  Use when user asks to review, check, or analyze a contract, agreement, MOU, or legal document.
+  Do NOT use for general legal questions (answer directly) or for drafting new contracts.
+systems: [realization, arena]
+task_type: legal
+triggers:
+  - review this contract
+  - contract review
+  - check this agreement
+  - review these terms
+  - legal review
+  - analyze this contract
+  - contract risk assessment
+negative_triggers:
+  - write a contract
+  - draft agreement
+tools_required: []
+pipeline: [orchestrator]
+steps:
+  - id: extract_clauses
+    type: agent
+    agent: orchestrator
+    label: Extracting key clauses
+    prompt: |
+      Analyze the contract/agreement provided: "{user_message}"
+
+      Extract and summarize these key elements:
+      1. PARTIES: Who is involved
+      2. TERM: Duration and renewal provisions
+      3. PAYMENT: Amount, schedule, penalties
+      4. TERMINATION: Notice period, exit costs
+      5. LIABILITY: Caps, indemnification
+      6. IP/CONFIDENTIALITY: Ownership, NDA scope
+      7. NON-COMPETE: Scope, duration, geography
+      8. DISPUTE RESOLUTION: Mediation, arbitration, jurisdiction
+      9. FORCE MAJEURE: Coverage and consequences
+
+      IMPORTANT: Start with "DISCLAIMER: This is analytical support only,
+      not legal advice. Consult a qualified lawyer before signing."
+    output_var: clause_analysis
+
+  - id: risk_flags
+    type: agent
+    agent: orchestrator
+    label: Risk assessment
+    inject_context: [clause_analysis]
+    prompt: |
+      Based on the clause analysis, flag risks:
+
+      RED FLAGS (High Risk):
+      - [list any dangerous or unusual clauses]
+
+      YELLOW FLAGS (Medium Risk):
+      - [list concerning but negotiable items]
+
+      GREEN FLAGS (Standard):
+      - [list items that are market-standard]
+
+      PRIORITY NEGOTIATION POINTS:
+      1. [Most important change to request]
+      2. [Second most important]
+      3. [Third]
+
+      VERDICT: Review with lawyer / Acceptable as-is / Needs negotiation
+    output_var: risk_assessment
+
+  - id: summary
+    type: agent
+    agent: orchestrator
+    label: Compiling review summary
+    inject_context: [clause_analysis, risk_assessment]
+    prompt: |
+      Compile a concise contract review summary combining the clause analysis
+      and risk assessment. Keep it actionable and clear.
+output_format: structured_report

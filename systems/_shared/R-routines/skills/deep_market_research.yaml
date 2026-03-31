@@ -1,0 +1,126 @@
+name: deep_market_research
+status: active
+version: "2.0"
+description: |
+  Deep market research using web crawling to extract data from industry reports,
+  market analysis sites, and data sources. Produces structured market intelligence.
+  Use when user asks for comprehensive market research or industry analysis.
+systems: [realization, burtucala, arena]
+task_type: web_research
+triggers:
+  - deep market research
+  - market deep dive
+  - industry analysis
+  - market intelligence
+  - sector research
+  - market size
+  - market opportunity
+  - tam sam som
+  - total addressable market
+negative_triggers:
+  - competitor analysis
+  - property search
+  - brand audit
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [strategist, gatekeeper]
+steps:
+  - id: scope
+    type: agent
+    agent: orchestrator
+    label: Defining research scope
+    prompt: |
+      The user is requesting deep market research: "{user_message}"
+
+      Define the research scope:
+      1. Market/industry being researched
+      2. Geographic focus (Portugal, Europe, global)
+      3. Key questions to answer
+      4. Specific data points needed (market size, growth rate, key players, etc.)
+    output_var: research_scope
+
+  - id: search_reports
+    type: tool
+    action: web_search
+    label: Finding market reports
+    query_template: "{user_message} market research report 2025 2026 data"
+    output_var: report_results
+
+  - id: search_data
+    type: tool
+    action: web_search
+    label: Finding data sources
+    query_template: "{user_message} market size growth rate statistics"
+    output_var: data_results
+
+  - id: crawl_sources
+    type: agent
+    agent: orchestrator
+    label: Extracting data from sources
+    inject_context: [research_scope, report_results, data_results]
+    prompt: |
+      From the search results, identify the top 5-8 most credible sources
+      (industry reports, government data, analyst publications, trade associations).
+
+      Use web_fetch to read each source and extract:
+      - Market size figures (with year and source)
+      - Growth rates (CAGR, YoY)
+      - Key player market shares
+      - Trend data
+      - Regulatory factors
+      - Any data tables or charts described in text
+
+      Prioritize recent data (2024-2026). Note the credibility level of each source.
+    output_var: extracted_data
+
+  - id: synthesize
+    type: agent
+    agent: strategist
+    label: Producing market intelligence
+    inject_context: [research_scope, extracted_data]
+    prompt: |
+      Produce a comprehensive market intelligence report:
+
+      EXECUTIVE SUMMARY (2-3 sentences)
+
+      MARKET DEFINITION & SCOPE
+      - What market, geography, segments
+
+      MARKET SIZE & GROWTH
+      - TAM / SAM / SOM estimates (with sources)
+      - Historical growth trajectory
+      - Projected growth (CAGR)
+
+      MARKET STRUCTURE
+      - Key players and approximate market shares
+      - Value chain breakdown
+      - Entry barriers
+
+      TRENDS & DRIVERS
+      - Growth drivers (ranked by impact)
+      - Headwinds and risks
+      - Technology disruption factors
+      - Regulatory landscape
+
+      OPPORTUNITY ANALYSIS
+      - Underserved segments
+      - Emerging niches
+      - Geographic expansion opportunities
+
+      DATA CONFIDENCE
+      - High confidence: [data points with multiple corroborating sources]
+      - Medium confidence: [single credible source]
+      - Low confidence: [estimates, extrapolations]
+
+      SOURCES
+      - [Numbered list with URLs]
+    output_var: report
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    inject_context: [report]
+    review: true
+output_format: structured_report

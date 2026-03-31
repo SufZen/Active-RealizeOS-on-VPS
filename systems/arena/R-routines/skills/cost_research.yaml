@@ -1,0 +1,56 @@
+name: cost_research
+status: active
+version: "2.0"
+description: |
+  Researches current market costs for construction materials and services in Portugal.
+  Use when user asks about market prices, material costs, or labor costs for the Arena Habitat project.
+  Do NOT use for internal budget status or variance reporting (use budget_check).
+system: arena
+task_type: budget_review
+triggers:
+  - how much does
+  - current price of
+  - cost of materials
+  - construction costs
+  - labor costs
+  - market price for
+  - price comparison
+negative_triggers:
+  - budget status
+  - budget variance
+  - how much have we spent
+tools_required:
+  - web_search
+pipeline: [finance_controller]
+steps:
+  - id: search
+    type: tool
+    action: web_search
+    label: Searching market costs
+    query_template: "{user_message} Portugal {today} price cost"
+    output_var: cost_data
+
+  - id: validate_search
+    type: condition
+    check: "{cost_data}"
+    branches:
+      "Error": stop
+      default: continue
+
+  - id: analyze
+    type: agent
+    agent: finance_controller
+    label: Cost analysis
+    inject_context: [cost_data]
+    prompt: |
+      Based on the market research, answer: "{user_message}"
+
+      Provide:
+      1. Current market price ranges (low/mid/high)
+      2. Price per unit/sqm where applicable
+      3. How this compares to MC's current budget assumptions
+      4. Suppliers or sources found
+      5. Recommendation on timing (buy now vs. wait)
+
+      Cite sources. Flag if prices seem unreliable or outdated.
+output_format: structured_report

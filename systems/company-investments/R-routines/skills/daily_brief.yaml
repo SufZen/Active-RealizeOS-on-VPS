@@ -1,0 +1,57 @@
+name: daily_brief
+status: active
+version: "2.0"
+description: |
+  Produces the company daily treasury and investment brief with market context,
+  liquidity posture, and pending paper-mode actions.
+system: company-investments
+task_type: financial
+triggers:
+  - daily treasury brief
+  - daily investment brief
+  - company market brief
+  - morning treasury note
+steps:
+  - id: search_market
+    type: tool
+    action: web_search
+    query_template: "{today} global market news rates liquidity equities credit crypto"
+    output_var: market_results
+  - id: read_top_source
+    type: tool
+    action: web_fetch
+    params:
+      url: "{first_result_url}"
+    output_var: market_page
+  - id: cio_brief
+    type: agent
+    agent: investment_cio
+    inject_context: [market_results, market_page]
+    extra_context_files:
+      - systems/company-investments/F-foundations/investment-policy.md
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/F-foundations/risk-rules.md
+      - systems/company-investments/B-brain/account-registry.md
+      - systems/company-investments/I-insights/thesis-log.md
+      - systems/company-investments/I-insights/performance-review.md
+      - systems/company-investments/R-routines/state-map.md
+    prompt: |
+      Produce a DAILY COMPANY INVESTMENT AND TREASURY BRIEF.
+
+      Required sections:
+      - market regime snapshot
+      - liquidity and mandate posture
+      - major sourced developments
+      - thesis changes
+      - pending paper-mode actions only
+  - id: risk_check
+    type: agent
+    agent: risk_controller
+    inject_context: [cio_brief]
+    extra_context_files:
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review the brief and identify blocked actions, liquidity concerns,
+      governance gaps, or stale-data problems.
+output_format: structured_report

@@ -1,0 +1,87 @@
+name: investor_deck
+status: active
+version: "2.0"
+description: |
+  Generate structured investor presentations and LP reports.
+  Use when user asks for LP updates, investor decks, or quarterly reports.
+systems: [arena, burtucala]
+task_type: investor_report
+triggers:
+  - investor deck
+  - investor presentation
+  - lp presentation
+  - quarterly deck
+  - create a deck for investors
+  - pitch deck
+  - investor slide deck
+negative_triggers:
+  - lp report
+  - lp update
+  - monthly report
+tools_required:
+  - drive_create_doc
+pipeline: [capital_sales, gatekeeper]
+steps:
+  - id: gather_data
+    type: agent
+    agent: orchestrator
+    label: Gathering portfolio data
+    prompt: |
+      Compile the current portfolio data for an investor presentation:
+      "{user_message}"
+
+      Extract from knowledge base:
+      - Current portfolio positions and valuations
+      - Key milestones achieved this period
+      - Financial highlights (NAV, IRR, cash position)
+      - Upcoming milestones and timeline
+      - Risk items requiring attention
+
+      Format as structured data points, not prose.
+    output_var: portfolio_data
+
+  - id: build_deck
+    type: agent
+    agent: capital_sales
+    label: Building investor deck
+    inject_context: [portfolio_data]
+    model: claude_opus
+    prompt: |
+      Create a structured investor presentation based on the portfolio data.
+
+      Follow this slide structure:
+      1. Title slide with fund name and period
+      2. Executive summary (3-5 key highlights)
+      3. Portfolio overview table
+      4. Financial highlights with charts description
+      5. Key milestones (completed + upcoming)
+      6. Market context
+      7. Risk matrix (impact x likelihood)
+      8. Forward look and next steps
+
+      Make it data-heavy: numbers, tables, charts descriptions.
+      Professional tone. Every claim backed by a number.
+    output_var: deck_content
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    inject_context: [deck_content]
+    review: true
+    prompt: |
+      Review this investor deck for:
+      1. Accuracy of financial figures
+      2. Professional tone and clarity
+      3. Completeness of required sections
+      4. No sensitive information that shouldn't be shared
+      5. Consistent formatting
+
+  - id: save_doc
+    type: tool
+    action: drive_create_doc
+    label: Saving to Google Drive
+    params:
+      title: "{doc_title}"
+      content: "{deck_content}"
+output_format: structured_report

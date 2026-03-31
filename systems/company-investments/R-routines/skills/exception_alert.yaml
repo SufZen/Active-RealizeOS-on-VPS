@@ -1,0 +1,32 @@
+name: exception_alert
+status: active
+version: "2.0"
+description: |
+  Generates a focused risk and exception summary for the company investment system.
+system: company-investments
+task_type: financial
+triggers:
+  - exception alert
+  - treasury risk alert
+  - liquidity alert
+  - what is broken in company portfolio
+steps:
+  - id: risk_alert
+    type: agent
+    agent: risk_controller
+    extra_context_files:
+      - systems/company-investments/F-foundations/authority-matrix.md
+      - systems/company-investments/F-foundations/risk-rules.md
+      - systems/company-investments/B-brain/account-registry.md
+      - systems/company-investments/I-insights/performance-review.md
+      - systems/company-investments/R-routines/state-map.md
+    prompt: |
+      Produce a concise COMPANY INVESTMENT EXCEPTION ALERT for:
+      "{user_message}"
+
+      Include:
+      - hard blockers
+      - soft warnings
+      - stale or missing data
+      - next action needed
+output_format: text

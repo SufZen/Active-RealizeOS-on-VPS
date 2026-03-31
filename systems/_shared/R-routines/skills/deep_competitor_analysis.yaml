@@ -1,0 +1,103 @@
+name: deep_competitor_analysis
+status: active
+version: "2.0"
+description: |
+  Deep competitor analysis using Firecrawl to crawl entire competitor websites,
+  extract structured data, and produce comprehensive competitive intelligence.
+  Use when user asks for in-depth competitor research beyond a single page.
+systems: [realization, burtucala]
+task_type: web_research
+triggers:
+  - deep competitor analysis
+  - crawl competitor site
+  - competitor deep dive
+  - full competitor research
+  - analyze competitor website
+  - competitive intelligence
+  - competitor breakdown
+negative_triggers:
+  - quick competitor check
+  - brand audit
+tools_required:
+  - web_search
+  - web_fetch
+pipeline: [strategist, gatekeeper]
+steps:
+  - id: identify_competitors
+    type: agent
+    agent: orchestrator
+    label: Identifying competitors
+    prompt: |
+      The user wants deep competitor analysis: "{user_message}"
+
+      Identify the top 3-5 competitors to analyze. For each, provide:
+      - Company name
+      - Website URL
+      - Brief description of what they do
+
+      If the user already specified competitors, use those.
+    output_var: competitor_list
+
+  - id: search_context
+    type: tool
+    action: web_search
+    label: Gathering competitive context
+    query_template: "{user_message} competitor analysis market"
+    output_var: market_context
+
+  - id: crawl_sites
+    type: agent
+    agent: orchestrator
+    label: Deep-crawling competitor sites
+    inject_context: [competitor_list]
+    prompt: |
+      For each competitor identified, use web_fetch to crawl their key pages:
+      1. Homepage (value proposition, positioning)
+      2. Pricing page (pricing model, tiers)
+      3. About page (team, history, funding)
+      4. Product/services pages (offerings, features)
+
+      Extract structured data from each page. Focus on:
+      - Unique value propositions
+      - Pricing structures
+      - Target audience signals
+      - Technology stack clues
+      - Content strategy patterns
+    output_var: crawl_data
+
+  - id: analyze
+    type: agent
+    agent: strategist
+    label: Producing competitive intelligence
+    inject_context: [competitor_list, market_context, crawl_data]
+    prompt: |
+      Produce a comprehensive competitive intelligence report:
+
+      COMPETITIVE LANDSCAPE OVERVIEW
+      - Market positioning map (who competes where)
+
+      PER-COMPETITOR PROFILES (for each):
+      - Strengths / Weaknesses
+      - Pricing vs. value
+      - Target audience
+      - Content & marketing strategy
+      - Technology differentiation
+
+      COMPARATIVE MATRIX (table format)
+      Feature/Dimension | Us | Competitor A | Competitor B | ...
+
+      STRATEGIC OPPORTUNITIES
+      - Gaps we can exploit
+      - Threats to watch
+      - Recommended actions (prioritized)
+
+      VERDICT: Our competitive position and recommended next moves
+    output_var: analysis
+
+  - id: review
+    type: agent
+    agent: gatekeeper
+    label: Quality review
+    inject_context: [analysis]
+    review: true
+output_format: structured_report

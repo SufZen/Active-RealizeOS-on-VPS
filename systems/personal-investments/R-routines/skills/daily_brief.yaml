@@ -1,0 +1,59 @@
+name: daily_brief
+status: active
+version: "2.0"
+description: |
+  Produces the personal daily investment brief with market context, policy-aware
+  portfolio posture, and any pending paper-mode actions.
+system: personal-investments
+task_type: financial
+triggers:
+  - daily investment brief
+  - morning portfolio brief
+  - daily market brief
+  - investment morning note
+steps:
+  - id: search_market
+    type: tool
+    action: web_search
+    query_template: "{today} global market news equities bonds rates crypto"
+    output_var: market_results
+  - id: read_top_source
+    type: tool
+    action: web_fetch
+    params:
+      url: "{first_result_url}"
+    output_var: market_page
+  - id: cio_brief
+    type: agent
+    agent: investment_cio
+    inject_context: [market_results, market_page]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/investment-policy.md
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+      - systems/personal-investments/B-brain/account-registry.md
+      - systems/personal-investments/I-insights/thesis-log.md
+      - systems/personal-investments/I-insights/performance-review.md
+      - systems/personal-investments/R-routines/state-map.md
+    prompt: |
+      Produce a DAILY PERSONAL INVESTMENT BRIEF.
+
+      Required sections:
+      - market regime snapshot
+      - key developments from the sourced article
+      - policy-aware portfolio posture
+      - watch items and thesis changes
+      - pending actions that fit paper mode only
+
+      If there is not enough holdings data, say so explicitly and downgrade the action quality.
+  - id: risk_check
+    type: agent
+    agent: risk_controller
+    inject_context: [cio_brief]
+    extra_context_files:
+      - systems/personal-investments/F-foundations/authority-matrix.md
+      - systems/personal-investments/F-foundations/risk-rules.md
+    prompt: |
+      Review this daily brief and identify any blocked actions, risk flags,
+      or data-quality constraints that should be called out.
+output_format: structured_report

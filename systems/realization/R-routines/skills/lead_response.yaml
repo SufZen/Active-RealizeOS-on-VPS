@@ -1,0 +1,20 @@
+name: lead_response
+status: active
+system: realization
+description: |
+  Generates personalized response to a property inquiry with qualification.
+  Use when user asks to respond to a lead, contact, or inquiry about a property.
+  Do NOT use for general emails (use content_pipeline).
+task_type: sales
+pipeline: [pipeline-manager, writer, reviewer]
+triggers:
+  - respond to lead
+  - lead response
+  - inquiry response
+  - reply to contact
+  - answer inquiry
+  - property inquiry
+negative_triggers:
+  - newsletter
+  - blog
+  - article

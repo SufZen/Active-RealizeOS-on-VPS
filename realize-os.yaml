@@ -1,0 +1,306 @@
+# RealizeOS — Full Configuration
+# 8-system AI operations engine for Asaf Eyzenkot's business ecosystem
+
+name: "RealizeOS"
+
+# ─────────────────────────────────────────────────────────────
+# SHARED LAYER — cross-system identity, protocols, agents
+# ─────────────────────────────────────────────────────────────
+shared:
+  directory: systems/_shared
+  identity: systems/_shared/F-foundations/identity.md
+  preferences: systems/_shared/F-foundations/user-preferences.md
+  anti_patterns: systems/_shared/F-foundations/anti-patterns.md
+  agents:
+    - design-director
+    - marketing-growth
+
+# ─────────────────────────────────────────────────────────────
+# SYSTEMS
+# ─────────────────────────────────────────────────────────────
+systems:
+
+  # 1. REALIZATION — Portugal Real Estate Operations
+  - key: realization
+    name: "Realization Portugal"
+    directory: systems/realization
+
+    routing:
+      sales: [listing-specialist, pipeline-manager]
+      content: [writer, reviewer]
+      analysis: [market-analyst, orchestrator]
+      operations: [operations, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [plan, advise, coordinate, brief, overview, project, development, realization, realization.pt]
+      listing-specialist: [listing, property, description, idealista, optimize, copy, brochure, photos]
+      market-analyst: [analyze, market, pricing, comparables, research, evaluate, cma, appraisal, valuation]
+      pipeline-manager: [lead, contact, inquiry, response, pipeline, follow-up, qualify, score, showing]
+      writer: [write, draft, post, content, report, email, proposal]
+      reviewer: [review, quality, feedback, approve, proofread]
+      operations: [operations, process, owner, report, contract, commission, admin, site, management, renovation, construction, gp, promoter]
+
+  # 1b. REALIZATION.CO.IL — Venture Architecture Studio
+  - key: realization-il
+    name: "Realization.co.il"
+    directory: systems/realization.co.il
+
+    routing:
+      content: [writer, reviewer]
+      strategy: [strategist, orchestrator]
+      ventures: [builder, orchestrator]
+      community: [community, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [plan, advise, coordinate, brief, venture, studio, pillar, realization.co.il, israel, hebrew, israeli]
+      strategist: [analyze, strategy, market, evaluate, business, model, advisory, consulting, innovation]
+      writer: [write, draft, post, article, content, proposal, copy, brand, creative]
+      builder: [build, develop, create, launch, venture, product, tool, platform, startup]
+      community: [community, engage, linkedin, social, connect, outreach, partnership]
+      reviewer: [review, proofread, quality, feedback, approve, edit]
+
+  # 2. BURTUCALA — Real Estate & PropTech Portugal
+  - key: burtucala
+    name: "Burtucala"
+    directory: systems/burtucala
+
+    routing:
+      content: [writer, reviewer]
+      deals: [deal-analyst, orchestrator]
+      ventures: [venture-builder, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      writer: [write, draft, post, article, content, proposal, pitch, marketing]
+      deal-analyst: [deal, property, investment, analyze, evaluate, roi, due-diligence, price, market, listing]
+      venture-builder: [venture, build, launch, partner, startup, fund, sprint, strategy]
+      reviewer: [review, quality, feedback, approve, proofread]
+      orchestrator: [advise, prioritize, coordinate, overview, burtucala, proptech]
+
+  # 3. ARENA — Real Estate Development (Arena Habitat SPV)
+  - key: arena
+    name: "Arena"
+    directory: systems/arena
+
+    routing:
+      strategy: [orchestrator, project-director]
+      finance: [finance-controller, orchestrator]
+      capital: [capital-sales, orchestrator]
+      architecture: [architect, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [coordinate, overview, status, brief, advise, arena, habitat, spv]
+      project-director: [project, milestone, timeline, deliverable, phase, manage, track]
+      finance-controller: [budget, cost, expense, invoice, cash-flow, financial, p&l, report]
+      capital-sales: [investor, capital, raise, lp, pitch, term-sheet, close, deal, fundraise]
+      architect: [design, architecture, build, space, technical, drawings, specification, boa]
+
+  # 4. HOMEAID — Remote Management & Expat Services
+  - key: homeaid
+    name: "HomeAid"
+    directory: systems/homeaid
+
+    routing:
+      operations: [operations, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [coordinate, advise, manage, service, homeaid, remote, expat]
+      operations: [operations, process, property, client, rental, maintenance, admin]
+
+  # 5. MIOLIVING PARTNERSHIP — Italian Real Estate Partnership
+  - key: mioliving_partnership
+    name: "MioLiving Partnership"
+    directory: systems/mioliving_partnership
+
+    routing:
+      deals: [deal-analyst, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [coordinate, advise, italy, partnership, strategy, mioliving, mio, italian]
+      deal-analyst: [deal, property, investment, analyze, evaluate, market, listing, milan, rome, naples, florence]
+
+  # 6. PERSONAL — Personal & Lifestyle Intelligence
+  - key: personal
+    name: "Personal"
+    directory: systems/personal
+
+    routing:
+      general: [portugal_life]
+      portugal: [portugal_life]
+      relationships: [relationship]
+      personal: [personal]
+
+    agent_routing:
+      portugal_life: [portugal, visa, golden, bureaucracy, tax, nhr, municipality, residency, move, expat, phone, contact, digi, nos, meo, vodafone, edp, smas, water, electricity, gas, internet, telecom, utility, bill, fatura, disconnect, transfer, bank, wire, payment, irs, imt, imi, nif, financas, camara, sns, health, doctor, appointment, seguranca, notary, procuracao, contract, rent, insurance, paulo, setubal, lisbon, algarve, portuguese]
+      personal: [personal, life, todo, calendar, reminder, daily, habit, goal, decision, meditation, spiritual, growth, learning, book, read, morning, evening, routine, journal, fitness, wellness]
+      relationship: [relationship, family, partner, social, people, conflict, communicate, friends, network]
+
+  # 7. PERSONAL INVESTMENTS — Personal Portfolio Operations
+  - key: personal-investments
+    name: "Personal Investments"
+    directory: systems/personal-investments
+
+    routing:
+      strategy: [investment_cio, risk_controller]
+      operations: [execution_controller, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [portfolio, dashboard, overview, coordinate, review, committee, performance, returns, gains, losses, stocks, crypto, etf, bonds]
+      investment_cio: [invest, investment, allocate, rebalance, thesis, strategy, optimize, portfolio, buy, sell, hold, dividend]
+      risk_controller: [risk, exposure, concentration, drawdown, veto, compliance, guardrail, limit]
+      execution_controller: [approval, approve, queue, trade, order, execute, paper trade, audit, sync]
+
+  # 8. COMPANY INVESTMENTS — Treasury & Company Allocation
+  - key: company-investments
+    name: "Company Investments"
+    directory: systems/company-investments
+
+    routing:
+      strategy: [investment_cio, risk_controller]
+      operations: [execution_controller, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [portfolio, treasury, dashboard, overview, plan, help, coordinate, review, committee]
+      investment_cio: [invest, investment, allocate, treasury, rebalance, thesis, strategy, market, optimize, portfolio]
+      risk_controller: [risk, exposure, concentration, drawdown, veto, compliance, guardrail, limit, treasury]
+      execution_controller: [approval, approve, queue, trade, order, execute, paper trade, audit, sync]
+
+  # 9. REALIZEOS — AI Engine & Platform Development
+  - key: realizeos
+    name: "RealizeOS"
+    directory: systems/realizeos
+
+    routing:
+      build: [builder, orchestrator]
+      content: [writer, orchestrator]
+      general: [orchestrator]
+
+    agent_routing:
+      orchestrator: [advise, coordinate, strategy, roadmap, product, realizeos, engine, platform, saas, bot]
+      builder: [build, develop, code, feature, system, architecture, integration, api, deploy, vps]
+      writer: [write, docs, blog, content, post, article, guide, documentation]
+
+# ─────────────────────────────────────────────────────────────
+# FEATURES
+# ─────────────────────────────────────────────────────────────
+features:
+  review_pipeline: true
+  auto_memory: true
+  skills_v2: true
+  proactive_mode: false
+  cross_system: true
+  evolution_engine: true
+  evolution_gap_detection: true
+  evolution_auto_apply: false     # safety default — requires explicit approval
+  evolution_prompt_refine: true
+  evolution_skill_suggest: true
+
+# ─────────────────────────────────────────────────────────────
+# LLM ROUTING — Multi-model strategy
+# ─────────────────────────────────────────────────────────────
+llm:
+  default_model: claude-sonnet-4-6
+
+  routing:
+    # Fast, lightweight tasks — Q&A, lookups, short replies
+    simple: gemini-flash
+
+    # Content creation — writing, drafting, editing
+    content: claude-sonnet-4-6
+
+    # Strategy, analysis, complex reasoning
+    strategy: claude-sonnet-4-6
+
+    # Deep analysis, data synthesis, financial modeling
+    complex: claude-opus-4-6
+
+    # Code generation, system building, technical tasks
+    code: claude-sonnet-4-6
+
+    # Image generation tasks (route to image-capable models)
+    image: gemini-pro-vision
+
+    # Video understanding and generation
+    video: veo-2
+
+    # Data analysis, structured output, spreadsheets
+    data: claude-opus-4-6
+
+  # Per-system model overrides (optional)
+  system_overrides:
+    arena:
+      complex: claude-opus-4-6   # Financial modeling needs best reasoning
+    realizeos:
+      code: claude-sonnet-4-6    # Code tasks always get Sonnet
+
+# ─────────────────────────────────────────────────────────────
+# CHANNELS
+# ─────────────────────────────────────────────────────────────
+channels:
+  - type: api
+    port: 8080
+
+  - type: telegram
+    name: sufz
+    token: ${SUFZ_BOT_TOKEN}
+    mode: super_agent
+    description: "SufZ — super agent orchestrating the entire ecosystem"
+    authorized_users: ${AUTHORIZED_USERS}
+    # Forum topic thread_id → system_key (supergroup -1003692940105)
+    topic_routing:
+      2: realization
+      3: realization-il
+      6: burtucala
+      7: arena
+      8: realizeos
+      9: personal
+      10: personal-investments
+      11: company-investments
+      65: homeaid
+      66: mioliving_partnership
+
+  - type: telegram
+    name: paulo
+    token: ${PAULO_BOT_TOKEN}
+    system_key: personal
+    description: "Paulo — bureaucratic matters in Portugal across all ventures"
+    authorized_users: ${AUTHORIZED_USERS}
+
+# ─────────────────────────────────────────────────────────────
+# VOICE — ElevenLabs Conversational AI + Twilio Outbound
+# ─────────────────────────────────────────────────────────────
+voice:
+  enabled: true
+
+  elevenlabs:
+    api_key: ${ELEVENLABS_API_KEY}
+    agent_id: ${ELEVENLABS_AGENT_ID}
+    phone_number_id: ${ELEVENLABS_PHONE_NUMBER_ID}
+    pt_voice_id: ${ELEVENLABS_PT_VOICE_ID}
+    # Portuguese voice ID for calls to Portuguese entities
+
+  twilio:
+    account_sid: ${TWILIO_ACCOUNT_SID}
+    auth_token: ${TWILIO_AUTH_TOKEN}
+    phone_number: ${TWILIO_PHONE_NUMBER}
+    # US-based number — used for outbound calls only
+    pt_caller_phone: ${PT_CALLER_PHONE}
+    # Portuguese caller ID — used for Portuguese-language calls to improve answer rates
+
+  webhooks:
+    # ElevenLabs posts call transcript here when call completes
+    elevenlabs_post_call:
+      path: /webhooks/elevenlabs
+      system_key: personal
+      secret: ${ELEVENLABS_WEBHOOK_SECRET}
+      enabled: true
+      message_template: |
+        Call completed. Call ID: {call_id}. Duration: {duration_seconds}s. Status: {status}.
+        Transcript: {transcript}

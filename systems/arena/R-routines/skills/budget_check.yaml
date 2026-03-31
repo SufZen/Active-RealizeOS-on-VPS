@@ -1,0 +1,19 @@
+name: budget_check
+status: active
+system: arena
+description: |
+  Generates Arena Habitat budget status and variance analysis.
+  Use when user asks about budget, spending, cost overruns, or variances.
+  Do NOT use for market price research (use cost_research).
+task_type: budget_review
+pipeline: [finance_controller]
+triggers:
+  - budget status
+  - how much have we spent
+  - budget variance
+  - cost overrun
+  - budget update
+negative_triggers:
+  - market price
+  - current price of
+  - how much does
