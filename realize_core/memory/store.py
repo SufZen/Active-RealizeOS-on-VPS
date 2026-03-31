@@ -162,6 +162,18 @@ def init_db():
                 step_timings TEXT DEFAULT '[]'
             )
         """)
+        # --- Schema migrations for existing databases ---
+        # Add tenant_id to llm_usage if missing (pre-v0.1 databases)
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(llm_usage)").fetchall()}
+        if "tenant_id" not in cols:
+            conn.execute("ALTER TABLE llm_usage ADD COLUMN tenant_id TEXT DEFAULT 'default'")
+        # Add created_at to interaction_log if it only has timestamp (pre-v0.1)
+        il_cols = {row[1] for row in conn.execute("PRAGMA table_info(interaction_log)").fetchall()}
+        if "created_at" not in il_cols and "timestamp" in il_cols:
+            conn.execute("ALTER TABLE interaction_log RENAME COLUMN timestamp TO created_at")
+        elif "created_at" not in il_cols:
+            conn.execute("ALTER TABLE interaction_log ADD COLUMN created_at TEXT DEFAULT ''")
+
         # Performance indexes
         conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_system_category ON memories(system_key, category)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_llm_usage_tenant_date ON llm_usage(tenant_id, created_at)")
