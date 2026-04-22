@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Realization Strategic Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface-hover:#1a1a25;--border:#2a2a3a;--border-active:#4a4a6a;--text:#e8e8f0;--text-dim:#8888a0;--text-muted:#555568;--accent-personal:#f472b6;--accent-il:#3b82f6;--accent-pt:#10b981;--accent-es:#f59e0b;--accent-it:#ef4444;--accent-brand:#a855f7;--accent-holding:#6b7280;--accent-infra:#06b6d4;--accent-fund:#eab308;--accent-invest:#22d3ee;--phase1:#ef4444;--phase2:#f59e0b;--phase3:#3b82f6;--phase4:#10b981;--phase5:#a855f7;--cat-web:#06b6d4;--cat-brand:#f472b6;--cat-product:#3b82f6;--cat-legal:#6b7280;--cat-partner:#a855f7;--cat-infra:#10b981}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+.grain{position:fixed;top:0;left:0;width:100%;height:100%;opacity:.03;pointer-events:none;z-index:999;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* NAV */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 40px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.topnav-brand{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted)}
+.topnav-brand span{color:var(--text);font-weight:700}
+.topnav-tabs{display:flex;gap:0}
+.tab-btn{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:16px 20px;background:none;border:none;color:var(--text-muted);cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;position:relative}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--accent-il)}
+.topnav-status{font-family:'Space Mono',monospace;font-size:10px;color:var(--text-muted);display:flex;align-items:center;gap:6px}
+.status-live{width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* VIEWS */
+.view{display:none;max-width:1400px;margin:0 auto;padding:20px 40px 60px}
+.view.active{display:block}
+
+/* SHARED STYLES */
+.section-header{padding:10px 0 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.section-title{font-size:28px;font-weight:300;letter-spacing:-.5px}
+.section-title span{font-weight:700}
+.section-desc{color:var(--text-dim);font-size:13px;max-width:600px;line-height:1.6;margin-top:4px}
+
+/* FILTERS */
+.filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.fbtn{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;transition:all .2s}
+.fbtn:hover{border-color:var(--border-active);color:var(--text)}
+.fbtn.active{background:var(--surface);border-color:var(--border-active);color:var(--text)}
+
+/* ARCH BANNER */
+.arch{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);display:flex;margin-bottom:16px}
+.arch-l{flex:1;padding:12px 16px;text-align:center;border-right:1px solid var(--border)}
+.arch-l:last-child{border-right:none}
+.arch-l-label{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
+.arch-l-name{font-size:14px;font-weight:600}
+.arch-l-desc{font-size:10px;color:var(--text-dim);margin-top:2px}
+
+/* PARENT NODE */
+.pnode{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:10px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+.pnode::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:14px 0 0 14px}
+.pnode:hover{background:var(--surface-hover);border-color:var(--border-active);transform:translateY(-1px)}
+.pnode.expanded{border-color:var(--border-active)}
+.pnode.dimmed{opacity:.2;transform:scale(.99)}
+.pnode.dimmed:hover{opacity:.4}
+.ph{display:flex;justify-content:space-between;align-items:flex-start}
+.pi{flex:1}
+.pl{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:4px}
+.pn{font-size:18px;font-weight:600;margin-bottom:4px}
+.pd{color:var(--text-dim);font-size:12px;line-height:1.5;max-width:680px}
+.pm{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.mt{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;padding:2px 7px;border-radius:3px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text-dim)}
+.ei{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:5px;font-size:14px;color:var(--text-dim);transition:all .3s;flex-shrink:0;margin-left:10px;margin-top:2px}
+.pnode:hover .ei{border-color:var(--border-active);color:var(--text)}
+.pnode.expanded .ei{transform:rotate(45deg)}
+
+.ch{max-height:0;overflow:hidden;transition:max-height .5s ease,opacity .3s;opacity:0}
+.ch.open{max-height:3000px;opacity:1}
+.cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.cc{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:14px;transition:all .25s;cursor:pointer}
+.cc:hover{background:rgba(255,255,255,.04);border-color:var(--border-active)}
+.cc.ec{background:rgba(255,255,255,.04);border-color:var(--border-active)}
+.cs{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.sd{width:5px;height:5px;border-radius:50%}
+.s-a{background:#10b981}.s-p{background:#f59e0b}.s-t{background:#a855f7}.s-e{background:#3b82f6}.s-d{background:#6b7280}.s-r{background:#06b6d4}
+.cn{font-size:14px;font-weight:600;margin-bottom:3px}
+.cd{color:var(--text-dim);font-size:11px;line-height:1.5}
+.cdet{max-height:0;overflow:hidden;transition:max-height .4s}
+.cdet.open{max-height:600px}
+.db{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.dbl{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px}
+.dbt{font-size:11px;color:var(--text-dim);line-height:1.5}
+.dbt ul{padding-left:14px;margin-top:3px}.dbt li{margin-bottom:2px}
+.stags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.stag{font-size:8px;padding:2px 6px;border-radius:3px;border:1px solid;font-family:'Space Mono',monospace}
+
+.region-personal::before{background:var(--accent-personal)}.region-personal .pl{color:var(--accent-personal)}
+.region-il::before{background:var(--accent-il)}.region-il .pl{color:var(--accent-il)}
+.region-pt::before{background:var(--accent-pt)}.region-pt .pl{color:var(--accent-pt)}
+.region-es::before{background:var(--accent-es)}.region-es .pl{color:var(--accent-es)}
+.region-it::before{background:var(--accent-it)}.region-it .pl{color:var(--accent-it)}
+.region-brand::before{background:var(--accent-brand)}.region-brand .pl{color:var(--accent-brand)}
+.region-holding::before{background:var(--accent-holding)}.region-holding .pl{color:var(--accent-holding)}
+.region-infra::before{background:var(--accent-infra)}.region-infra .pl{color:var(--accent-infra)}
+.region-fund::before{background:var(--accent-fund)}.region-fund .pl{color:var(--accent-fund)}
+.region-invest::before{background:var(--accent-invest)}.region-invest .pl{color:var(--accent-invest)}
+
+/* SYNERGIES */
+.syn-section{margin-top:28px;padding-top:24px;border-top:1px solid var(--border)}
+.syn-section h3{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+.syn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px}
+.syn-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;transition:all .2s}
+.syn-card:hover{border-color:var(--border-active)}
+.syn-t{font-size:13px;font-weight:600;margin-bottom:4px}
+.syn-d{font-size:11px;color:var(--text-dim);line-height:1.5}
+.syn-p{font-family:'Space Mono',monospace;font-size:9px;color:var(--text-muted);margin-top:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.syn-a{color:var(--accent-infra)}
+
+/* ROADMAP */
+.phase{margin-bottom:22px}
+.phase-h{display:flex;align-items:center;gap:12px;margin-bottom:10px;cursor:pointer}
+.phase-ind{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;flex-shrink:0;border:2px solid}
+.phase-tg{flex:1}
+.phase-tt{font-size:17px;font-weight:600}
+.phase-st{font-size:11px;color:var(--text-dim);margin-top:1px}
+.phase-tl{font-family:'Space Mono',monospace;font-size:10px;padding:3px 10px;border-radius:5px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);flex-shrink:0}
+
+.tasks{margin-left:16px;padding-left:22px;border-left:2px solid var(--border)}
+.task{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:6px;cursor:pointer;transition:all .25s;position:relative}
+.task::before{content:'';position:absolute;left:-24px;top:18px;width:8px;height:8px;border-radius:50%;border:2px solid var(--border);background:var(--bg)}
+.task:hover{background:var(--surface-hover);border-color:var(--border-active)}
+.task.texp{border-color:var(--border-active)}
+.task-h{display:flex;align-items:flex-start;gap:8px}
+.task-i{flex:1}
+.task-tags{display:flex;gap:4px;margin-bottom:4px;flex-wrap:wrap}
+.ttag{font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1px;padding:2px 6px;border-radius:3px;text-transform:uppercase}
+.t-web{background:rgba(6,182,212,.12);color:var(--cat-web)}
+.t-brand{background:rgba(244,114,182,.12);color:var(--cat-brand)}
+.t-product{background:rgba(59,130,246,.12);color:var(--cat-product)}
+.t-legal{background:rgba(107,114,128,.12);color:var(--cat-legal)}
+.t-partner{background:rgba(168,85,247,.12);color:var(--cat-partner)}
+.t-infra{background:rgba(16,185,129,.12);color:var(--cat-infra)}
+.task-n{font-size:14px;font-weight:600;margin-bottom:2px}
+.task-d{font-size:11px;color:var(--text-dim);line-height:1.5}
+.task-e{color:var(--text-muted);font-size:13px;flex-shrink:0;margin-top:1px;transition:transform .3s}
+.task.texp .task-e{transform:rotate(45deg)}
+.tdet{max-height:0;overflow:hidden;transition:max-height .4s}
+.tdet.open{max-height:800px}
+
+.callout{background:linear-gradient(135deg,rgba(6,182,212,.06),rgba(6,182,212,.02));border:1px solid rgba(6,182,212,.2);border-radius:8px;padding:12px 14px;margin:8px 0;font-size:11px;color:var(--text-dim);line-height:1.7}
+.callout strong{color:var(--cat-web);font-weight:600}
+.callout code{font-family:'Space Mono',monospace;background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-size:10px;color:var(--text)}
+.dep-chain{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px}
+.dep-item{font-size:9px;padding:2px 7px;border-radius:3px;background:rgba(255,255,255,.04);border:1px solid var(--border);font-family:'Space Mono',monospace;color:var(--text-dim)}
+.dep-arrow{color:var(--text-muted);font-size:11px}
+.roadmap-callout{background:linear-gradient(135deg,rgba(6,182,212,.06),rgba(6,182,212,.02));border:1px solid rgba(6,182,212,.2);border-radius:8px;padding:10px 14px;margin-top:8px;font-size:11px;color:var(--text-dim);line-height:1.5}
+.roadmap-callout strong{color:var(--accent-infra);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px}
+
+/* SUMMARY */
+.summary{margin-top:28px;padding-top:24px;border-top:1px solid var(--border)}
+.summary h3{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.sum-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px}
+.sum-num{font-family:'Space Mono',monospace;font-size:24px;font-weight:700;margin-bottom:2px}
+.sum-label{font-size:11px;color:var(--text-dim)}
+
+@media(max-width:768px){.topnav,.view{padding-left:16px;padding-right:16px}.section-title{font-size:22px}.cg,.syn-grid{grid-template-columns:1fr}.arch{flex-direction:column}.arch-l{border-right:none;border-bottom:1px solid var(--border)}.arch-l:last-child{border-bottom:none}.sum-grid{grid-template-columns:1fr 1fr}.tab-btn{padding:14px 12px;font-size:10px}}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<nav class="topnav">
+  <div class="topnav-brand"><span>Realization</span> Strategic Dashboard</div>
+  <div class="topnav-tabs">
+    <button class="tab-btn active" onclick="switchView('ecosystem')">Ecosystem</button>
+    <button class="tab-btn" onclick="switchView('roadmap')">Roadmap</button>
+    <button class="tab-btn" onclick="switchView('stack')">Tech Stack</button>
+  </div>
+  <div class="topnav-status"><div class="status-live"></div>v2.4 · March 2026</div>
+</nav>
+
+<!-- ======================== ECOSYSTEM VIEW ======================== -->
+<div class="view active" id="view-ecosystem">
+  <div class="section-header">
+    <div>
+      <div class="section-title">The <span>Realization</span> Ecosystem</div>
+      <div class="section-desc">Venture studio led by Asaf Eyzenkot (Suf Zen). Organized by region, domain, and strategic function. Powered by RealizeOS.</div>
+    </div>
+  </div>
+
+  <div class="arch">
+    <div class="arch-l" style="border-left:3px solid var(--accent-personal)"><div class="arch-l-label" style="color:var(--accent-personal)">Layer 1</div><div class="arch-l-name">Suf Zen</div><div class="arch-l-desc">Personal brand</div></div>
+    <div class="arch-l" style="border-left:3px solid var(--accent-il)"><div class="arch-l-label" style="color:var(--accent-il)">Layer 2</div><div class="arch-l-name">Realization</div><div class="arch-l-desc">Venture studio</div></div>
+    <div class="arch-l" style="border-left:3px solid var(--accent-infra)"><div class="arch-l-label" style="color:var(--accent-infra)">Layer 3</div><div class="arch-l-name">RealizeOS + SufZ</div><div class="arch-l-desc">AI ops + super-agent</div></div>
+    <div class="arch-l" style="border-left:3px solid var(--accent-pt)"><div class="arch-l-label" style="color:var(--accent-pt)">Layer 4</div><div class="arch-l-name">Ventures & SPVs</div><div class="arch-l-desc">Operating businesses</div></div>
+  </div>
+
+  <div class="filters" id="eco-filters">
+    <button class="fbtn active" data-filter="all" onclick="filterEco('all')">ALL</button>
+    <button class="fbtn" data-filter="personal" onclick="filterEco('personal')">PERSONAL</button>
+    <button class="fbtn" data-filter="il" onclick="filterEco('il')">ISRAEL</button>
+    <button class="fbtn" data-filter="pt" onclick="filterEco('pt')">PORTUGAL</button>
+    <button class="fbtn" data-filter="es" onclick="filterEco('es')">SPAIN</button>
+    <button class="fbtn" data-filter="it" onclick="filterEco('it')">ITALY</button>
+    <button class="fbtn" data-filter="brand" onclick="filterEco('brand')">THE BRAND</button>
+    <button class="fbtn" data-filter="fund" onclick="filterEco('fund')">FUND/GP</button>
+    <button class="fbtn" data-filter="infra" onclick="filterEco('infra')">INFRA</button>
+    <button class="fbtn" data-filter="invest" onclick="filterEco('invest')">INVESTMENTS</button>
+    <button class="fbtn" data-filter="holding" onclick="filterEco('holding')">LEGAL</button>
+  </div>
+
+  <!-- SUF ZEN -->
+  <div class="pnode region-personal" data-region="personal" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Personal Brand — Suf Zen</div><div class="pn">Asaf Eyzenkot · "Building Realities"</div><div class="pd">Public-facing personal brand across FB, IG, LinkedIn, GitHub. Drives inbound for all Realization ventures through content, webinars, and courses.</div><div class="pm"><span class="mt">THOUGHT LEADERSHIP</span><span class="mt">CONTENT</span><span class="mt">WEBINARS</span><span class="mt">COURSES</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Social Media & Content</div><div class="cd">LinkedIn, IG, FB, GitHub, YouTube. Content pillars: AI/tech, venture building, RE, lifestyle design.</div><div class="cdet"><div class="db"><div class="dbl">Feeds Into</div><div class="stags"><span class="stag" style="border-color:var(--accent-il);color:var(--accent-il)">Realization .co.il</span><span class="stag" style="border-color:var(--accent-infra);color:var(--accent-infra)">RealizeOS community</span><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">Burtucala</span></div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Courses & Workshops</div><div class="cd">AI, business systems, venture building. Current cohort includes RealizeOS founding users.</div><div class="cdet"><div class="db"><div class="dbl">Revenue Model</div><div class="dbt">Course fees · Upsell to consulting · Founding user pipeline for RealizeOS</div></div></div></div></div></div></div>
+
+  <!-- ISRAEL -->
+  <div class="pnode region-il" data-region="il" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Israel Hub — realization.co.il</div><div class="pn">Technology, Venture-Building & Systems</div><div class="pd">Innovation engine. AI products, systems architecture, open-source, consulting. Hebrew- and English-speaking markets.</div><div class="pm"><span class="mt">AI / SYSTEMS</span><span class="mt">VENTURE BUILDING</span><span class="mt">CONSULTING</span><span class="mt">OPEN SOURCE</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Live · Pre-Public</div><div class="cn">RealizeOS</div><div class="cd">AI ops system (FABRIC architecture). Engine mature, 9 systems configured, founding users engaged. realizeos.ai is LIVE. Going open source (BSL). Serves entire ecosystem.</div><div class="cdet"><div class="db"><div class="dbl">Revenue Model</div><div class="dbt">Tier 1: Installation sessions · Tier 3: Vertical consulting · Future: Hosting recommendations</div></div><div class="db"><div class="dbl">Ecosystem-Wide Role</div><div class="dbt">Powers all ventures: RE ops, hotel workflows, HomeAid dispatch, Burtucala CRM, MioLiving pipeline. "Walk the talk" strategy.</div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Realization Consulting</div><div class="cd">Business systems, AI integration, venture-building consulting. Project-based and retainers.</div></div></div></div></div>
+
+  <!-- PORTUGAL -->
+  <div class="pnode region-pt" data-region="pt" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Portugal Hub — realization.pt</div><div class="pn">European Real Estate & RE-Adjacent Services</div><div class="pd">All European RE consolidated here. Development, maintenance, investment platform, international facilitation. GP-managed with dedicated team. Burtucala as marketing arm.</div><div class="pm"><span class="mt">REAL ESTATE</span><span class="mt">DEVELOPMENT</span><span class="mt">PROPERTY SERVICES</span><span class="mt">GP-MANAGED</span><span class="mt">INVESTMENT PLATFORM</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active · Marketing Arm</div><div class="cn">Burtucala</div><div class="cd">Marketing arm of the Portuguese market. Drives international clients into all realization.pt services.</div><div class="cdet"><div class="db"><div class="dbl">Synergies</div><div class="stags"><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">Feeds Arena</span><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">Feeds HomeAid</span><span class="stag" style="border-color:var(--accent-il);color:var(--accent-il)">Israeli pipeline</span><span class="stag" style="border-color:var(--accent-fund);color:var(--accent-fund)">Fund LP sourcing</span></div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active · SPV</div><div class="cn">Arena</div><div class="cd">Residential development, Barreiro. SPV: ESCORPIÃO DIPLOMADO, LDA. GP team managed.</div><div class="cdet"><div class="db"><div class="dbl">Structure</div><div class="dbt">SPV: ESCORPIÃO DIPLOMADO, LDA · GP: Realization Unipessoal LDA (33%) · Dedicated GP team</div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">HomeAid</div><div class="cd">Home maintenance & repair. Handyman, electrical, plumbing, painting, assessments. Lisbon & Setúbal.</div><div class="cdet"><div class="db"><div class="dbl">Synergies</div><div class="stags"><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">Arena aftercare</span><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">Burtucala referrals</span><span class="stag" style="border-color:var(--accent-infra);color:var(--accent-infra)">RealizeOS dispatch</span></div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-p"></div>Live · Upgrade Planned</div><div class="cn">Investment Platform</div><div class="cd">RE investment platform for international investors. Live at invest.realization.pt. Serious upgrade planned — target completion by end of May 2026.</div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-d"></div>Frozen</div><div class="cn">BOA Architecture</div><div class="cd">Marvelous Creations LDA activity frozen (2026-03-24). Potential pivot to biz architecture + AI consulting for PT firms — on hold until further notice.</div><div class="cdet"><div class="db"><div class="dbl">Synergies</div><div class="stags"><span class="stag" style="border-color:var(--accent-il);color:var(--accent-il)">RealizeOS deployments</span><span class="stag" style="border-color:var(--accent-il);color:var(--accent-il)">Israel consulting IP</span></div></div></div></div></div></div></div>
+
+  <!-- SPAIN -->
+  <div class="pnode region-es" data-region="es" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Spain — Barcelona</div><div class="pn">Lifestyle & Curated Experiences</div><div class="pd">Premium lifestyle portal. Operated through realization.co.il with on-ground venue partnerships.</div><div class="pm"><span class="mt">LIFESTYLE</span><span class="mt">NIGHTLIFE</span><span class="mt">PREMIUM DOMAIN</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-p"></div>Pre-Launch</div><div class="cn">Sexy.Barcelona</div><div class="cd">Curated premium experiences — nightlife, luxury, cultural events. Approval seal for vetted venues. Founded by Suf Zen & Meirav Gonen.</div><div class="cdet"><div class="db"><div class="dbl">Revenue Model</div><div class="dbt">Accreditation fees · VIP memberships · Events · Affiliates · Brand partnerships</div></div></div></div></div></div></div>
+
+  <!-- THE BRAND -->
+  <div class="pnode region-brand" data-region="brand" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Strategic Partnership — The Brand</div><div class="pn">Miguel Angelo & George Mazzetti</div><div class="pd">Multi-vertical partnership under Realization. Hospitality, infrastructure, international RE. Strategic partner — no dedicated RealizeOS system.</div><div class="pm"><span class="mt">HOTELS</span><span class="mt">WATER</span><span class="mt">BRAZIL RE</span><span class="mt">DATA CENTERS</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Hotel Acquisitions</div><div class="cd">Sourcing and acquiring hotel properties across Europe.</div></div><div class="cc"><div class="cs"><div class="sd s-e"></div>Developing</div><div class="cn">Water Project</div><div class="cd">Infrastructure project in development.</div></div><div class="cc"><div class="cs"><div class="sd s-e"></div>Developing</div><div class="cn">Brazil Real Estate</div><div class="cd">International RE through The Brand.</div></div><div class="cc"><div class="cs"><div class="sd s-e"></div>Developing</div><div class="cn">Data Centers</div><div class="cd">Emerging infrastructure vertical.</div></div></div></div></div>
+
+  <!-- ITALY -->
+  <div class="pnode region-it" data-region="it" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Italy — Realization × MioLiving</div><div class="pn">Hotel Investment, Development & Retail Escort</div><div class="pd">Strategic partnership: Realization (strategy, systems, deal-structuring) × MioLiving (local expertise, licensing, operations). 4 partners: Asaf, Meirav, Rafi, Shirley.</div><div class="pm"><span class="mt">HOSPITALITY</span><span class="mt">RESIDENTIAL FLIPS</span><span class="mt">RETAIL ESCORT</span><span class="mt">PARTNERSHIP</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-e"></div>Emerging</div><div class="cn">Hotel Investment</div><div class="cd">Italy-specific underwriting (IRES, IRAP, RETT). 1% deal-making fee on large deals. Professional deck needed for large companies.</div><div class="cdet"><div class="db"><div class="dbl">Synergies</div><div class="stags"><span class="stag" style="border-color:var(--accent-brand);color:var(--accent-brand)">The Brand deals</span><span class="stag" style="border-color:var(--accent-il);color:var(--accent-il)">RealizeOS hotel ops</span><span class="stag" style="border-color:var(--accent-es);color:var(--accent-es)">Sexy.BCN venues</span></div></div></div></div><div class="cc"><div class="cs"><div class="sd s-e"></div>Emerging</div><div class="cn">Residential Development & Flips</div><div class="cd">Through MioLiving partnership. Italy-focused residential projects.</div></div><div class="cc"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Retail Investor Escort</div><div class="cd">Guiding individual investors through Italian RE purchases. End-to-end service.</div></div></div></div></div>
+
+  <!-- FUND/GP -->
+  <div class="pnode region-fund" data-region="fund" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Fund & GP Structure</div><div class="pn">Realization as General Partner</div><div class="pd">Realization Unipessoal LDA acts as GP across RE development projects. Dedicated GP team manages Portuguese developments. Scalable SPV model per project.</div><div class="pm"><span class="mt">GP / LP</span><span class="mt">SPV MODEL</span><span class="mt">MGMT FEE</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">GP Team (Portugal RE)</div><div class="cd">Dedicated team managing all PT RE developments. Contractor oversight, budgets, regulatory, investor relations.</div></div><div class="cc"><div class="cs"><div class="sd s-a"></div>Active · SPV</div><div class="cn">ESCORPIÃO DIPLOMADO, LDA</div><div class="cd">SPV for Arena development. GP: Realization Unipessoal LDA (33%).</div></div></div></div></div>
+
+  <!-- INVESTMENTS -->
+  <div class="pnode region-invest" data-region="invest" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Investments — Personal & Company</div><div class="pn">Portfolio & Treasury Management</div><div class="pd">Consolidated investment operations: personal portfolio allocation and company treasury. AI-powered analysis, risk management, and execution tracking via RealizeOS.</div><div class="pm"><span class="mt">PORTFOLIO</span><span class="mt">TREASURY</span><span class="mt">RISK MGMT</span><span class="mt">AI-POWERED</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Personal Portfolio</div><div class="cd">Personal investment portfolio operations. CIO strategy, risk controls, execution queue with paper-trade audit. Managed via RealizeOS personal-investments system.</div><div class="cdet"><div class="db"><div class="dbl">Agent Team</div><div class="dbt">Investment CIO · Risk Controller · Execution Controller · Orchestrator</div></div><div class="db"><div class="dbl">Synergies</div><div class="stags"><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">Arena GP returns</span><span class="stag" style="border-color:var(--accent-it);color:var(--accent-it)">MioLiving deal pipeline</span></div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Company Treasury</div><div class="cd">Realization Unipessoal LDA treasury and company-level allocations. Same agent architecture as personal portfolio — optimized for corporate treasury management.</div><div class="cdet"><div class="db"><div class="dbl">Agent Team</div><div class="dbt">Investment CIO · Risk Controller · Execution Controller · Orchestrator</div></div><div class="db"><div class="dbl">Feeds Into</div><div class="stags"><span class="stag" style="border-color:var(--accent-fund);color:var(--accent-fund)">GP fund structure</span><span class="stag" style="border-color:var(--accent-pt);color:var(--accent-pt)">RE development capital</span></div></div></div></div></div></div></div>
+
+  <!-- INFRA -->
+  <div class="pnode region-infra" data-region="infra" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Shared Infrastructure — AI & Ops</div><div class="pn">SufZ Super-Agent & Connected Stack</div><div class="pd">SufZ (distinct from Suf Zen brand) is the super-agent. FABRIC migration ~80% complete — 9 systems live, voice + Telegram operational. Hetzner VPS + Coolify deployment layer.</div><div class="pm"><span class="mt">FABRIC ~80%</span><span class="mt">SUFZ AGENT</span><span class="mt">HETZNER + COOLIFY</span><span class="mt">MCP CONNECTED</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active · Migration In Progress</div><div class="cn">SufZ Agent System</div><div class="cd">Super-agent powering automation across all ventures. ABCMOT → FABRIC migration well underway — Sprint 5 complete, 9 systems configured, all agents/skills/KB migrated.</div><div class="cdet"><div class="roadmap-callout"><strong>STATUS:</strong> FABRIC migration ~80% complete. 9 systems live, voice integration built, Paulo Telegram bot operational. Remaining: Docker image rebuild, Super Agent multi-system bot, internal deployments to ventures.</div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Hetzner VPS + Coolify</div><div class="cd">Centralized hosting on Hetzner CX22 (2 vCPU, 4GB RAM). Coolify v4 installed (2026-03-25), Traefik handling SSL. Nginx as backend for static sites. realization.pt + n8n live on VPS.</div><div class="cdet"><div class="roadmap-callout"><strong>INFRA STATUS (Mar 25):</strong> Coolify v4 live on :8000. Traefik proxying ports 80/443. Docker cleaned (14GB reclaimed). NPM removed. realization.pt, n8n.realization.co.il routed via Traefik. Next: VPS upgrade to CX32+, RealizeOS engine deploy.</div><div class="db"><div class="dbl">Integration Stack</div><div class="dbt">Coolify REST API + CLI + MCP Server → Claude Code/Desktop. Full deploy, restart, env management from AI. Also: n8n, Make, Fireflies, Miro, Supabase, Canva, Gamma, ClickUp, Gmail, Google Calendar, Apollo, Bitly, ElevenLabs, Twilio.</div></div></div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Paulo Telegram Bot</div><div class="cd">Personal assistant bot for Portugal matters. Routes to personal system via RealizeOS engine. Handles bureaucracy, contacts, daily ops.</div></div><div class="cc" onclick="tC(this,event)"><div class="cs"><div class="sd s-a"></div>Active</div><div class="cn">Voice AI (ElevenLabs + Twilio)</div><div class="cd">Outbound call system. ElevenLabs conversational AI with Portuguese voice. Twilio phone routing. Post-call webhook transcription to I-insights/contact-log.</div></div></div></div></div>
+
+  <!-- LEGAL -->
+  <div class="pnode region-holding" data-region="holding" onclick="tP(this,event)"><div class="ph"><div class="pi"><div class="pl">Legal Entities & SPVs</div><div class="pn">Corporate Structure</div><div class="pd">Realization Unipessoal LDA is primary GP. Project-specific SPVs for each development.</div><div class="pm"><span class="mt">REALIZATION UNIPESSOAL LDA</span><span class="mt">SPVs</span></div></div><div class="ei">+</div></div><div class="ch"><div class="cg"><div class="cc"><div class="cs"><div class="sd s-a"></div>Active · GP</div><div class="cn">Realization Unipessoal LDA</div><div class="cd">Primary operating entity. GP (33%) in RE developments.</div></div><div class="cc"><div class="cs"><div class="sd s-a"></div>Active · SPV</div><div class="cn">ESCORPIÃO DIPLOMADO, LDA</div><div class="cd">Dedicated SPV for Arena, Barreiro.</div></div><div class="cc"><div class="cs"><div class="sd s-d"></div>Frozen (2026-03-24)</div><div class="cn">Marvelous Creations LDA</div><div class="cd">Owns BOA Architecture brand. Company activity frozen. Decision pending on final disposition.</div></div></div></div></div>
+
+  <!-- SYNERGIES -->
+  <div class="syn-section">
+    <h3>Key Cross-Ecosystem Synergies</h3>
+    <div class="syn-grid">
+      <div class="syn-card"><div class="syn-t">RealizeOS Open Source Flywheel</div><div class="syn-d">Suf Zen content → RealizeOS adoption → installation sessions → consulting upsell → vertical deployments</div><div class="syn-p"><span>Content</span><span class="syn-a">→</span><span>RealizeOS</span><span class="syn-a">→</span><span>Consulting</span><span class="syn-a">→</span><span>Verticals</span></div></div>
+      <div class="syn-card"><div class="syn-t">Portugal RE Full Stack</div><div class="syn-d">Burtucala attracts → Arena sells → HomeAid maintains. One client, three revenue streams.</div><div class="syn-p"><span>Burtucala</span><span class="syn-a">→</span><span>Arena</span><span class="syn-a">→</span><span>HomeAid</span></div></div>
+      <div class="syn-card"><div class="syn-t">Walk the Talk</div><div class="syn-d">SufZ on FABRIC internally proves RealizeOS at scale. "We run this across 4 regions" = strongest sales proof.</div><div class="syn-p"><span>SufZ</span><span class="syn-a">→</span><span>All ventures</span><span class="syn-a">→</span><span>Credibility</span></div></div>
+      <div class="syn-card"><div class="syn-t">Hospitality Pipeline</div><div class="syn-d">The Brand + MioLiving source deals → Italy ops → Sexy.BCN venues → HomeAid maintains → Fund structures.</div><div class="syn-p"><span>Deals</span><span class="syn-a">→</span><span>Italy</span><span class="syn-a">→</span><span>BCN</span><span class="syn-a">→</span><span>Fund</span></div></div>
+      <div class="syn-card"><div class="syn-t">GP Scale Model</div><div class="syn-d">Each new RE project → new SPV → GP team scales → management fee + carry. No restructuring needed.</div><div class="syn-p"><span>Project</span><span class="syn-a">→</span><span>SPV</span><span class="syn-a">→</span><span>GP</span><span class="syn-a">→</span><span>Fee</span></div></div>
+      <div class="syn-card"><div class="syn-t">Investment Intelligence Loop</div><div class="syn-d">Personal + company portfolios powered by same AI agent architecture. Arena GP returns and MioLiving deals feed investment strategy. Treasury funds new RE developments.</div><div class="syn-p"><span>Deals</span><span class="syn-a">→</span><span>Returns</span><span class="syn-a">→</span><span>Treasury</span><span class="syn-a">→</span><span>New Projects</span></div></div>
+      <div class="syn-card"><div class="syn-t">Coolify Command Center</div><div class="syn-d">All websites on Coolify → MCP connected to Claude → manage entire web estate via AI commands. Deploy, restart, monitor from one place.</div><div class="syn-p"><span>Coolify</span><span class="syn-a">→</span><span>MCP</span><span class="syn-a">→</span><span>Claude</span><span class="syn-a">→</span><span>All Sites</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== ROADMAP VIEW ======================== -->
+<div class="view" id="view-roadmap">
+  <div class="section-header"><div><div class="section-title">Implementation <span>Roadmap</span></div><div class="section-desc">Prioritized phases for ecosystem restructuring. ~16 weeks. Click tasks for details.</div></div></div>
+
+  <div class="filters" id="road-filters">
+    <button class="fbtn active" data-cat="all" onclick="filterRoad('all')">ALL</button>
+    <button class="fbtn" data-cat="web" onclick="filterRoad('web')">WEB</button>
+    <button class="fbtn" data-cat="brand" onclick="filterRoad('brand')">BRAND</button>
+    <button class="fbtn" data-cat="product" onclick="filterRoad('product')">PRODUCT</button>
+    <button class="fbtn" data-cat="partner" onclick="filterRoad('partner')">PARTNERSHIPS</button>
+    <button class="fbtn" data-cat="infra" onclick="filterRoad('infra')">INFRA</button>
+    <button class="fbtn" data-cat="legal" onclick="filterRoad('legal')">LEGAL</button>
+  </div>
+
+  <!-- URGENT -->
+  <div style="background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(16,185,129,.04));border:1px solid rgba(16,185,129,.4);border-radius:10px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:flex-start;gap:12px">
+    <div style="background:#10b981;color:#fff;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;flex-shrink:0;letter-spacing:1px">DONE</div>
+    <div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px;text-decoration:line-through;opacity:.6">Burtucala.com Domain Renewed</div>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.6">Domain renewed on box.co.il. Transfer to one.com can be planned at leisure for domain consolidation.</div>
+    </div>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase"><div class="phase-h"><div class="phase-ind" style="border-color:var(--phase1);color:var(--phase1)">1</div><div class="phase-tg"><div class="phase-tt">Foundation & Quick Wins</div><div class="phase-st">Decisions, outreach, and planning that unblock everything</div></div><div class="phase-tl">WEEKS 1-2</div></div>
+  <div class="tasks">
+    <div class="task" data-cats="web" onclick="tT(this,event)" style="border-color:rgba(16,185,129,.4);opacity:.5"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag" style="background:rgba(16,185,129,.15);color:#10b981">DONE</span><span class="ttag t-web">WEB</span></div><div class="task-n" style="text-decoration:line-through">Renew Burtucala.com Domain</div><div class="task-d">Renewed on box.co.il. Transfer to one.com planned for consolidation.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Domain Registrar Map</div><div class="callout"><strong>one.com</strong> — realizeos.ai, realizeos.com, realizeos.io<br><strong>box.co.il</strong> — realization.co.il, burtucala.com (migrate to one.com over time)<br><strong>Other</strong> — realization.pt, sexy.barcelona, boaarc.com (verify registrars)<br><br><strong>Consolidation Target:</strong> Move all domains to one.com over time for single-dashboard management. Not urgent except for burtucala.com expiry.</div></div></div></div>
+    <div class="task" data-cats="brand,product" onclick="tT(this,event)" style="opacity:.5"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag" style="background:rgba(16,185,129,.15);color:#10b981">DONE</span><span class="ttag t-brand">BRAND</span><span class="ttag t-product">PRODUCT</span></div><div class="task-n" style="text-decoration:line-through">RealizeOS: Founding User Outreach</div><div class="task-d">Founding user message sent. Installation sessions in progress.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Why First</div><div class="dbt">Sessions generate product insights that shape repo, README, and launch. Nothing else proceeds well without real-world feedback.</div></div></div></div>
+    <div class="task" data-cats="web,brand" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-web">WEB</span><span class="ttag t-brand">BRAND</span></div><div class="task-n">Define Domain & Subdomain Architecture</div><div class="task-d">Map target URL structure for entire ecosystem before touching any websites.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="callout"><strong>realization.co.il</strong> — Tech, AI, consulting, /services, /insights, /collaborate <em style="color:var(--text-muted)">[box.co.il]</em><br><strong>realizeos.ai</strong> — Dedicated product site for RealizeOS. Docs, community, GitHub link, founding user CTA <em style="color:var(--text-muted)">[one.com · also owns .com + .io]</em><br><strong>realization.pt</strong> — All European RE: <code>properties.realization.pt</code> · <code>invest.realization.pt</code> · <code>homeaid.realization.pt</code> · /developments · /about<br><strong>burtucala.com</strong> — Marketing arm (independent domain for SEO) <em style="color:var(--text-muted)">[box.co.il → migrate to one.com]</em><br><strong>sexy.barcelona</strong> — Premium TLD (independent)<br><strong>mioliving.it</strong> — Partner-managed, Realization contributes<br><br><em style="color:var(--text-muted);font-size:10px">Domain consolidation: move all to one.com over time for single-dashboard management</em></div></div></div>
+    <div class="task" data-cats="infra" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-infra">INFRA</span></div><div class="task-n">Upgrade Hetzner VPS</div><div class="task-d">Rescale to CX32+ (8 vCPU, 16GB RAM) to support Coolify, all websites, and agent system.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Process</div><div class="dbt">Hetzner Cloud Dashboard → Server → Power Off → Rescale → Choose CX32 or CX42 → Done in minutes. No data loss, no IP change. Cost: ~€15-30/month (vs. current + Wix fees combined).</div></div></div></div>
+    <div class="task" data-cats="partner" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-partner">PARTNERSHIP</span></div><div class="task-n">Formalize MioLiving Partnership Structure</div><div class="task-d">Align on terms, revenue splits, Realization's role. Draft partnership term sheet.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Actions</div><div class="dbt"><ul><li>Draft term sheet (revenue split per vertical)</li><li>Define Realization brand position within MioLiving</li><li>Plan Milan meeting for operational alignment</li></ul></div></div></div></div>
+    <div class="task" data-cats="legal" onclick="tT(this,event)" style="opacity:.4"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag" style="background:rgba(107,114,128,.15);color:var(--cat-legal)">FROZEN</span><span class="ttag t-legal">LEGAL</span></div><div class="task-n">Marvelous Creations LDA — Activity Frozen</div><div class="task-d">Company activity frozen (2026-03-24). BOA brand decision deferred.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Options</div><div class="dbt"><ul><li>A: Close MC, retain BOA brand for biz architecture consulting</li><li>B: Keep MC as SPV for upcoming project, park BOA</li><li>C: Sell MC, drop BOA entirely</li></ul></div></div></div></div>
+  </div></div>
+
+  <!-- PHASE 2 -->
+  <div class="phase"><div class="phase-h"><div class="phase-ind" style="border-color:var(--phase2);color:var(--phase2)">2</div><div class="phase-tg"><div class="phase-tt">Infrastructure & Product Prep</div><div class="phase-st">Deploy Coolify, migrate properties, prep RealizeOS repo</div></div><div class="phase-tl">WEEKS 2-4</div></div>
+  <div class="tasks">
+    <div class="task" data-cats="infra" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-infra">INFRA</span></div><div class="task-n" style="text-decoration:line-through;opacity:.6">Deploy Coolify on Hetzner VPS</div><div class="task-d"><span style="color:#10b981;font-weight:600">DONE (2026-03-25)</span> — Coolify v4 installed, Traefik on 80/443, Docker cleaned (14GB freed), NPM removed, all sites routed. Next: VPS upgrade + MCP server connect.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Integration</div><div class="dbt">Install Coolify MCP server: <code>npx -y coolify-mcp</code>. Connect to Claude Code/Desktop. Gives you AI-powered deploy, restart, env management, monitoring across all sites. Also exposes REST API for n8n/Make automations.</div></div><div class="db"><div class="dbl">Dependencies</div><div class="dep-chain"><span class="dep-item">VPS upgraded (Phase 1)</span><span class="dep-arrow">→</span><span class="dep-item">This task</span></div></div></div></div>
+    <div class="task" data-cats="web" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-web">WEB</span></div><div class="task-n">Migrate Properties: .co.il → .pt</div><div class="task-d">Move entire properties section from Wix/.co.il to realization.pt. Set up 301 redirects.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Actions</div><div class="dbt"><ul><li>Export all listings + images from Wix</li><li>Build properties section on Coolify (Next.js or Astro)</li><li>301 redirect .co.il/propertiesforsale → realization.pt/properties</li><li>Update all external links</li></ul></div></div></div></div>
+    <div class="task" data-cats="web" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-web">WEB</span></div><div class="task-n">Consolidate European RE Under .pt</div><div class="task-d">Build realization.pt as hub: properties, investment platform, HomeAid, Arena, GP team. Burtucala drives traffic into each section.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Architecture</div><div class="dbt"><ul><li><strong>realization.pt</strong> — "European Real Estate by Realization"</li><li><strong>properties.realization.pt</strong> — Listings</li><li><strong>invest.realization.pt</strong> — Investment platform</li><li><strong>/developments</strong> — Arena + future GP projects</li><li><strong>/services</strong> — HomeAid</li></ul></div></div></div></div>
+    <div class="task" data-cats="web,product" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag" style="background:rgba(34,211,238,.12);color:var(--accent-invest)">IMPORTANT</span><span class="ttag t-web">WEB</span><span class="ttag t-product">PRODUCT</span></div><div class="task-n">Investment Platform: Serious Upgrade</div><div class="task-d">Full redesign/rebuild of invest.realization.pt. Target completion by end of May 2026.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Scope</div><div class="dbt">Complete upgrade of the RE investment platform for international investors. Currently live but needs significant improvements to support deal flow and investor experience.</div></div><div class="db"><div class="dbl">Timeline</div><div class="dbt">Important but not urgent — by ~2026-05-25. Details TBD after site audit.</div></div></div></div>
+    <div class="task" data-cats="product" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-product">PRODUCT</span></div><div class="task-n">RealizeOS: Repo Cleanup & README</div><div class="task-d">Based on session feedback. README, quickstart guide, BSL license, "Walk the talk" narrative.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Must Include</div><div class="dbt"><ul><li>Value proposition (1 paragraph)</li><li>FABRIC architecture overview</li><li>Quickstart: deploy in 10 min on Hetzner/Coolify</li><li>"We run this across 4 regions" proof</li><li>BSL license + commercial terms</li></ul></div></div></div></div>
+  </div></div>
+
+  <!-- PHASE 3 -->
+  <div class="phase"><div class="phase-h"><div class="phase-ind" style="border-color:var(--phase3);color:var(--phase3)">3</div><div class="phase-tg"><div class="phase-tt">Launch & Go Public</div><div class="phase-st">Open-source RealizeOS, relaunch .co.il, activate Burtucala funnel</div></div><div class="phase-tl">WEEKS 4-6</div></div>
+  <div class="tasks">
+    <div class="task" data-cats="product,brand" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-product">PRODUCT</span><span class="ttag t-brand">BRAND</span></div><div class="task-n">RealizeOS: Public Launch</div><div class="task-d">Flip repo to public. Launch realizeos.ai as product site. LinkedIn + dev communities. Webinar #2 targeting ICP.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Launch Sequence</div><div class="dbt"><ul><li>Day 1: Public repo + realizeos.ai live + LinkedIn announcement</li><li>Day 2-3: Dev communities, GitHub trending</li><li>Day 5-7: Webinar #2 — live demo + Q&A</li><li>Ongoing: Installation session clips as social proof</li></ul></div></div></div></div>
+    <div class="task" data-cats="web"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-web">WEB</span></div><div class="task-n">Relaunch realization.co.il (Tech-Only)</div><div class="task-d">Rebuild focused on AI, consulting, venture-building. Link to realizeos.ai for product. Footer: "RE → realization.pt"</div></div></div></div>
+    <div class="task" data-cats="brand"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-brand">BRAND</span></div><div class="task-n">Activate Burtucala → .pt Funnel</div><div class="task-d">Cross-link Burtucala content to realization.pt sections. Align content calendar with Sofia Sarres.</div></div></div></div>
+    <div class="task" data-cats="partner" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-partner">PARTNERSHIP</span></div><div class="task-n">MioLiving: Professional Investment Deck</div><div class="task-d">Create presentation materials blocking large hotel deals. High-ROI — one deal = dozens of retail transactions.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Deliverables</div><div class="dbt">Investment deck (Canva/Gamma) · One-pager · Process documentation · Due diligence checklist template</div></div></div></div>
+  </div></div>
+
+  <!-- PHASE 4 -->
+  <div class="phase"><div class="phase-h"><div class="phase-ind" style="border-color:var(--phase4);color:var(--phase4)">4</div><div class="phase-tg"><div class="phase-tt">Scale & Integrate</div><div class="phase-st">Migrate remaining sites, formalize Italy, connect internal ops</div></div><div class="phase-tl">WEEKS 6-10</div></div>
+  <div class="tasks">
+    <div class="task" data-cats="web,infra" onclick="tT(this,event)"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-web">WEB</span><span class="ttag t-infra">INFRA</span></div><div class="task-n">Migrate All Sites to Coolify</div><div class="task-d">Move .co.il, burtucala.com, sexy.barcelona off Wix onto Coolify stack.</div></div><div class="task-e">+</div></div><div class="tdet"><div class="db"><div class="dbl">Order</div><div class="dbt"><ul><li>1. realization.co.il (highest traffic)</li><li>2. burtucala.com (active marketing)</li><li>3. sexy.barcelona (build fresh)</li><li>4. boaarc.com (redirect or rebuild)</li></ul></div></div><div class="db"><div class="dbl">Tech Stack</div><div class="dbt">Astro or Next.js for marketing sites. Directus or Strapi (self-hosted on Coolify) as headless CMS powering multiple sites from one instance.</div></div></div></div>
+    <div class="task" data-cats="partner,legal"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-partner">PARTNERSHIP</span><span class="ttag t-legal">LEGAL</span></div><div class="task-n">Sign Realization × MioLiving Agreement</div><div class="task-d">Formal partnership. Italy as joint region. Revenue split per vertical.</div></div></div></div>
+    <div class="task" data-cats="infra,product"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-infra">INFRA</span><span class="ttag t-product">PRODUCT</span></div><div class="task-n">Deploy RealizeOS to Internal Ops</div><div class="task-d">HomeAid dispatch, Arena project management, Burtucala CRM, MioLiving deal tracking.</div></div></div></div>
+  </div></div>
+
+  <!-- PHASE 5 -->
+  <div class="phase"><div class="phase-h"><div class="phase-ind" style="border-color:var(--phase5);color:var(--phase5)">5</div><div class="phase-tg"><div class="phase-tt">Ecosystem Maturity</div><div class="phase-st">FABRIC migration, BOA pivot, template marketplace</div></div><div class="phase-tl">WEEKS 10-16+</div></div>
+  <div class="tasks">
+    <div class="task" data-cats="infra,product"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-infra">INFRA</span><span class="ttag t-product">PRODUCT</span></div><div class="task-n">SufZ: ABCMOT → FABRIC Migration</div><div class="task-d">Upgrade internal super-agent. Document as content for open-source community.</div></div></div></div>
+    <div class="task" data-cats="brand" style="opacity:.35"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag" style="background:rgba(107,114,128,.15);color:var(--cat-legal)">ON HOLD</span><span class="ttag t-brand">BRAND</span></div><div class="task-n">BOA Architecture Pivot Launch</div><div class="task-d">On hold — MC LDA frozen. Will revisit when company activity resumes.</div></div></div></div>
+    <div class="task" data-cats="web,brand" style="opacity:.35"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag" style="background:rgba(107,114,128,.15);color:var(--cat-legal)">ON HOLD</span><span class="ttag t-web">WEB</span><span class="ttag t-brand">BRAND</span></div><div class="task-n">Sexy.Barcelona Full Launch</div><div class="task-d">On hold — low priority. Venue partnerships, approval seal, content strategy to be planned when reactivated.</div></div></div></div>
+    <div class="task" data-cats="product"><div class="task-h"><div class="task-i"><div class="task-tags"><span class="ttag t-product">PRODUCT</span></div><div class="task-n">RealizeOS: Vertical Templates</div><div class="task-d">Package internal deployments as premium templates: RE ops, hotel investment, maintenance dispatch, venture studio.</div></div></div></div>
+  </div></div>
+
+  <div class="summary"><h3>Summary</h3><div class="sum-grid">
+    <div class="sum-card"><div class="sum-num" style="color:var(--phase1)">5</div><div class="sum-label">Phases · ~16 weeks</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--accent-invest)">9</div><div class="sum-label">RealizeOS systems live</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--cat-web)">7</div><div class="sum-label">Websites to consolidate</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--phase4)">€100+</div><div class="sum-label">/month hosting saved</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--cat-product)">2</div><div class="sum-label">Products going public</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--cat-partner)">2</div><div class="sum-label">Partnerships to formalize</div></div>
+    <div class="sum-card"><div class="sum-num" style="color:var(--cat-infra)">1</div><div class="sum-label">VPS to upgrade</div></div>
+  </div></div>
+</div>
+
+<!-- ======================== TECH STACK VIEW ======================== -->
+<div class="view" id="view-stack">
+  <div class="section-header"><div><div class="section-title">Connected <span>Tech Stack</span></div><div class="section-desc">All systems that can talk to each other. Coolify + MCP gives Claude control over the entire infrastructure.</div></div></div>
+
+  <div class="pnode region-infra" style="cursor:default">
+    <div class="pi">
+      <div class="pl" style="color:var(--accent-infra)">Core Infrastructure</div>
+      <div class="pn">Hetzner VPS + Coolify</div>
+      <div class="pd" style="margin-bottom:10px">Self-hosted deployment platform. All ecosystem websites, databases, and services managed from one dashboard. AI-controllable via MCP.</div>
+      <div class="callout">
+        <strong>Coolify → Claude Integration:</strong><br>
+        <code>REST API</code> — Full CRUD on apps, services, databases, deployments, env vars<br>
+        <code>CLI</code> — <code>coolify deploy name my-app</code>, <code>coolify app restart</code>, <code>coolify app env sync</code><br>
+        <code>MCP Server</code> — 38 optimized tools for Claude Desktop/Code: <code>npx -y @masonator/coolify-mcp</code><br>
+        <code>n8n/Make</code> — Webhook triggers for auto-deploy on git push, monitoring alerts
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px;margin-top:14px">
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-il)">RealizeOS (FABRIC)</div><div class="syn-d">AI ops system. realizeos.ai (.com + .io reserved). Open source core + paid services. Managed on one.com.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-infra)">SufZ Super-Agent</div><div class="syn-d">Internal automation. ABCMOT → FABRIC migration planned. Telegram bot mesh.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--cat-web)">Coolify</div><div class="syn-d">Self-hosted PaaS. Deploy, manage, monitor all sites. MCP + REST + CLI.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--cat-partner)">n8n</div><div class="syn-d">Automation workflows. Connected via MCP. Triggers Coolify deployments.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--cat-brand)">Make (Integromat)</div><div class="syn-d">Cross-platform automations. Buffer integration, webhook chains.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--phase2)">ClickUp</div><div class="syn-d">Project management. MCP connected. Pipeline tracking for all ventures.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--phase3)">Google Workspace</div><div class="syn-d">Drive, Gmail, Calendar. MCP connected. Document storage and communication.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-pt)">Supabase</div><div class="syn-d">Database layer. Self-hostable on Coolify. MCP connected.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--phase5)">Fireflies</div><div class="syn-d">Meeting transcription. MCP connected. Auto-captures deal discussions.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-es)">Canva + Gamma</div><div class="syn-d">Design and presentations. MCP connected. Marketing materials.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-it)">Apollo.io</div><div class="syn-d">Lead generation CRM. MCP connected. Dual-funnel ICP strategy.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--cat-legal)">Miro</div><div class="syn-d">Visual collaboration. MCP connected. Strategic planning boards.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-personal)">ElevenLabs + Twilio</div><div class="syn-d">Voice AI integration. ElevenLabs conversational AI for outbound calls. Twilio for phone routing. Webhook post-call transcription.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-pt)">Paulo Telegram Bot</div><div class="syn-d">Live personal assistant bot. Routes to personal system. Handles Portugal life matters, bureaucracy, contacts.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--accent-invest)">Bitly</div><div class="syn-d">Link management. MCP connected. Short links and QR codes for marketing campaigns.</div></div>
+    <div class="syn-card"><div class="syn-t" style="color:var(--phase1)">Domain Registrars</div><div class="syn-d"><strong>one.com:</strong> realizeos.ai/.com/.io<br><strong>box.co.il:</strong> realization.co.il, burtucala.com<br>Target: consolidate all on one.com</div></div>
+  </div>
+</div>
+
+<script>
+function switchView(v){document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.remove('active');if(b.textContent.toLowerCase()===v||(v==='stack'&&b.textContent.toLowerCase()==='tech stack'))b.classList.add('active')})}
+function tP(el,e){if(e.target.closest('.cc'))return;const c=el.querySelector('.ch');const o=c.classList.contains('open');document.querySelectorAll('.pnode').forEach(p=>{if(p!==el){p.classList.remove('expanded');const ch=p.querySelector('.ch');if(ch)ch.classList.remove('open')}});if(o){c.classList.remove('open');el.classList.remove('expanded')}else{c.classList.add('open');el.classList.add('expanded')}}
+function tC(el,e){e.stopPropagation();const d=el.querySelector('.cdet');if(!d)return;const o=d.classList.contains('open');el.parentElement.querySelectorAll('.cc').forEach(c=>{if(c!==el){c.classList.remove('ec');const dd=c.querySelector('.cdet');if(dd)dd.classList.remove('open')}});if(o){d.classList.remove('open');el.classList.remove('ec')}else{d.classList.add('open');el.classList.add('ec')}}
+function tT(el,e){e.stopPropagation();const d=el.querySelector('.tdet');if(!d)return;const o=d.classList.contains('open');el.parentElement.querySelectorAll('.task').forEach(t=>{if(t!==el){t.classList.remove('texp');const dd=t.querySelector('.tdet');if(dd)dd.classList.remove('open')}});if(o){d.classList.remove('open');el.classList.remove('texp')}else{d.classList.add('open');el.classList.add('texp')}}
+function filterEco(r){document.querySelectorAll('#eco-filters .fbtn').forEach(b=>{b.classList.remove('active');if(b.dataset.filter===r)b.classList.add('active')});document.querySelectorAll('.pnode').forEach(n=>{if(r==='all')n.classList.remove('dimmed');else if(n.dataset.region===r)n.classList.remove('dimmed');else{n.classList.add('dimmed');n.classList.remove('expanded');const c=n.querySelector('.ch');if(c)c.classList.remove('open')}})}
+function filterRoad(c){document.querySelectorAll('#road-filters .fbtn').forEach(b=>{b.classList.remove('active');if(b.dataset.cat===c)b.classList.add('active')});document.querySelectorAll('.task').forEach(t=>{if(c==='all'){t.style.opacity='1';t.style.transform='none'}else{const cats=t.dataset.cats||'';if(cats.includes(c)){t.style.opacity='1';t.style.transform='none'}else{t.style.opacity='.15';t.style.transform='scale(.99)'}}})}
+</script>
+</body>
+</html>
