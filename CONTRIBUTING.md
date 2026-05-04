@@ -7,17 +7,19 @@ Welcome! We're glad you're interested in contributing.
 ```bash
 git clone https://github.com/SufZen/realize-os.git
 cd realize-os
-pip install -e ".[dev]"
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+pip install pytest pytest-asyncio pytest-cov ruff
 pytest
 ```
 
 ## Development Setup
 
-1. **Fork and clone** the repository
-2. **Create a virtual environment**: `python -m venv venv && venv\Scripts\activate` (Windows) or `source venv/bin/activate` (Unix)
-3. **Install dependencies**: `pip install -e ".[dev]"`
-4. **Run tests**: `pytest`
-5. **Check linting**: `python -m py_compile realize_core/your_file.py`
+1. **Fork and clone** the repository.
+2. **Create a virtual environment**: `python -m venv .venv && source .venv/bin/activate` (Windows: `.venv\Scripts\activate`).
+3. **Install runtime + dev tooling**: `pip install -r requirements.txt && pip install pytest pytest-asyncio pytest-cov ruff`.
+4. **Run tests**: `pytest` (CI enforces coverage ≥ 50% — see `pyproject.toml`).
+5. **Lint**: `ruff check realize_core/ realize_api/ tests/` and `ruff format --check realize_core/ realize_api/ tests/`.
 
 ## How to Contribute
 
@@ -64,15 +66,28 @@ Follow the [Build Your Own Channel](docs/dev-process/reference/build-your-own-ch
 
 ```
 realize_core/
-├── channels/     # Communication adapters
-├── evolution/    # Self-evolution engine
-├── llm/          # LLM abstraction + routing
-├── media/        # Media processing pipeline
-├── security/     # RBAC, audit, vault
-├── tools/        # Tool SDK + implementations
-├── workflows/    # Workflow engine
-└── cli.py        # CLI entry point
+├── base_handler.py    # Single message-processing pipeline
+├── engine.py          # Channel-facing runtime entrypoint
+├── config.py          # YAML loader + auto-discovery
+├── scaffold.py        # Venture create/delete/list
+├── prompt/            # 12-layer prompt assembly
+├── llm/               # Provider registry, router, classifier, providers/
+├── memory/            # SQLite-backed conversation history
+├── pipeline/          # Creative sessions
+├── kb/                # FTS5 + vector KB index
+├── skills/            # v1 + v2 skill detection and execution
+├── tools/             # Tool SDK + implementations (Google, web, browser, MCP, KB, voice)
+├── channels/          # api, telegram, scheduler, web, webhooks, whatsapp
+├── workflows/         # Workflow engine
+├── media/             # Media processing
+├── security/          # RBAC, audit, vault
+├── utils/             # Shared helpers
+└── evolution/         # Gap detection, skill suggestion, prompt refinement
+
+realize_api/routes/    # FastAPI routers: chat, systems, evolution, webhooks, health
 ```
+
+The user-facing CLI is `cli.py` at the repo root. `cli_agent_bot.py` (also at the root) is a separate standalone Telegram bot for VPS control — not part of the engine pipeline.
 
 ## Pull Request Process
 

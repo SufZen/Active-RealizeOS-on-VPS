@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 ## Implementation Readiness: Investment Agent v1
 
 ### Verdict: READY

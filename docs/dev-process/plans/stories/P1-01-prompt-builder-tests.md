@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # Story: Complete test stubs for prompt builder
 
 ## Epic: Phase 1 — Test Suite & CI

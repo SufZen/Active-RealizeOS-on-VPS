@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # Story INV-02: Add Policy, Authority, And Risk Layer
 
 ## Goal

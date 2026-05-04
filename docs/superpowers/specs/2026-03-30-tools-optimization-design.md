@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # Tools & External Integrations Optimization — Design Spec
 
 ## Context

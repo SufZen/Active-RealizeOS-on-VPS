@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # Current Focus
 
 > Last updated: YYYY-MM-DD HH:MM UTC

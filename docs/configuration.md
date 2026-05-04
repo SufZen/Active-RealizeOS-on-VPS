@@ -1,5 +1,7 @@
 # Configuration Guide
 
+> Written for the public RealizeOS distribution. For the live VPS, the canonical reference is the root [`CLAUDE.md`](../CLAUDE.md) and [`setup-guide.md`](../setup-guide.md). The schema described here still applies, but the live `realize-os.yaml` includes more feature flags, more LLM task classes, and the voice/webhook channels.
+
 RealizeOS is configured through `realize-os.yaml` and environment variables in `.env`.
 
 ## realize-os.yaml
@@ -75,20 +77,33 @@ To add a new agent, create a `.md` file in `A-agents/` and add routing keywords 
 |------|---------|-------------|
 | `review_pipeline` | `true` | Enable automatic review pipeline for content |
 | `auto_memory` | `true` | Log learnings after meaningful interactions |
+| `skills_v2` | `true` | Enable the multi-step skill executor (agent / tool / condition / human) |
 | `proactive_mode` | `true` | Enable proactive suggestions in prompts |
 | `cross_system` | `false` | Share context across all configured systems |
+| `evolution_engine` | `true` | Master switch for the self-evolution subsystem |
+| `evolution_gap_detection` | `true` | Detect unhandled patterns / repeated ad-hoc requests |
+| `evolution_auto_apply` | `false` | If `true`, evolution suggestions apply without explicit approval |
+| `evolution_prompt_refine` | `true` | Suggest agent-prompt improvements from feedback |
+| `evolution_skill_suggest` | `true` | Auto-generate skill YAML for detected gaps |
 
 Custom flags are passed through without error — the engine ignores unknown flags.
 
 ### LLM Routing
 
-Maps task complexity to models. The defaults use Claude and Gemini, but any provider can be substituted:
+Maps task class to model. The defaults use Claude and Gemini, but any provider can be substituted. The live `realize-os.yaml` defines additional classes (`strategy`, `code`, `image`, `video`, `data`):
 
-| Task Class | Default Model | When Used |
+| Task Class | Live Model | When Used |
 |------------|---------------|-----------|
-| `simple` | `gemini-flash` | Quick lookups, simple questions |
-| `content` | `claude-sonnet` | Writing, analysis, reasoning |
-| `complex` | `claude-opus` | Strategy, multi-step planning |
+| `simple` | `gemini-flash` | Quick lookups, short replies |
+| `content` | `claude-sonnet-4-6` | Writing, drafting, editing |
+| `strategy` | `claude-sonnet-4-6` | Strategy, reasoning |
+| `complex` | `claude-opus-4-6` | Deep analysis, financial modeling |
+| `code` | `claude-sonnet-4-6` | Code generation, technical tasks |
+| `image` | `gemini-pro-vision` | Image tasks |
+| `video` | `veo-2` | Video understanding/generation |
+| `data` | `claude-opus-4-6` | Structured analysis, spreadsheets |
+
+Per-system overrides live under `llm.system_overrides` — e.g., pin `arena.complex` to Opus regardless of the global default.
 
 ### LLM Providers
 

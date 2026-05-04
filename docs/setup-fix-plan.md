@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # PRD: Fix RealizeOS Full Setup Flow
 
 > Based on [BMAD MTH-35 Planning Workflow](D:\Antigravity\BMAD\workflows\MTH-35-planning-workflow.md) — Full PRD Track

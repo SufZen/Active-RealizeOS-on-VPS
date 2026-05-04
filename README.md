@@ -1,188 +1,122 @@
-# RealizeOS
+# Active RealizeOS — VPS Instance
 
-**The AI operations system for your business.**
+This is the live RealizeOS deployment behind Asaf's business ecosystem. It runs **10 ventures + a `_shared` cross-system layer**, exposes a REST API, and drives two Telegram bots — all on a single VPS managed by systemd and Docker Compose. A separate standalone bot (`cli_agent_bot.py`) gives Telegram-only operator access to the box.
 
-RealizeOS gives you a coordinated team of AI agents that understand your venture, remember your preferences, and execute multi-step workflows — not just another chatbot.
+If you're looking for the public RealizeOS product (the shippable Lite vault and Full distribution), see `realize_lite/`, `docs/lite-guide.md`, and `docs/full-guide.md`. This README is for working **on** the active VPS, not packaging.
 
-## Two Editions
+## Where to Look
 
-### Lite (Obsidian + Claude Code) — $79
-For operators who want AI assistance without servers or coding.
-
-- Pre-structured knowledge base using the FABRIC system
-- 4 agent templates (Orchestrator, Writer, Reviewer, Analyst)
-- Venture voice and identity wizards (fill-in-the-blank)
-- Skill workflows (YAML-defined pipelines)
-- Works with Claude Code or Claude Desktop
-- **Get started in 15 minutes**
-
-### Full (Docker Self-Hosted) — $249
-
-For technical users who want the complete engine.
-
-- Multi-LLM routing with provider registry (Claude, Gemini, OpenAI, Ollama)
-- Multi-layer dynamic prompt assembly from living knowledge base
-- Hybrid KB search (FTS5 + vector embeddings)
-- Multi-step skill executor (agent, tool, condition, human workflows)
-- Creative pipelines with session management
-- Tool integrations: Google Workspace (13 tools), web search, browser automation, MCP
-- REST API + Telegram channels
-- Self-evolution engine (gap detection, skill suggestion, prompt refinement)
-- 8 system templates + CLI tooling (including venture management)
-- **Deploy with one command:** `docker compose up`
-
-## Quick Start — Lite Edition
-
-```bash
-# 1. Download and unzip the Lite package
-
-# 2. Open the folder as an Obsidian vault
-#    Obsidian → "Open folder as vault" → select the unzipped folder
-
-# 3. Follow the in-vault setup guide (setup-guide.md)
-#    Fill in: venture identity, voice rules, agent tweaks (15 min)
-
-# 4. Start working with Claude
-#    Open Claude Code in the vault directory
-#    Claude reads CLAUDE.md and becomes your AI team
-```
-
-## Quick Start — Full Edition
-
-```bash
-# 1. Download, unzip, and install
-cd realize-os
-pip install -r requirements.txt
-
-# 2. Initialize from a template
-python cli.py init --template consulting
-
-# 3. Configure API keys
-cp .env.example .env
-# Edit .env — add ANTHROPIC_API_KEY and/or GOOGLE_AI_API_KEY
-
-# 4a. Run locally
-python cli.py serve
-
-# 4b. Or deploy with Docker
-docker compose up
-```
-
-**Test it:**
-
-```bash
-curl -X POST http://localhost:8080/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "Help me plan Q2 strategy", "system_key": "consulting"}'
-```
-
-## The FABRIC System
-
-Every system's knowledge base follows the FABRIC directory structure:
-
-| Directory | Purpose |
+| You want to... | Read |
 | --- | --- |
-| **F**-foundations/ | Venture identity, voice rules, core standards |
-| **A**-agents/ | Agent team definitions and routing guide |
-| **B**-brain/ | Domain knowledge, market data, expertise |
-| **R**-routines/ | Skills, workflows, state maps, SOPs |
-| **I**-insights/ | Memory: learning log, feedback, decisions |
-| **C**-creations/ | Output: deliverables, drafts, final assets |
+| Understand the engine architecture and the live config | [`CLAUDE.md`](CLAUDE.md) (or [`AGENTS.md`](AGENTS.md) — same content) |
+| Bring up / operate the VPS deployment | [`setup-guide.md`](setup-guide.md) |
+| Look up env vars and config schema | [`docs/configuration.md`](docs/configuration.md), [`.env.example`](.env.example) |
+| Hit the REST API | [`docs/api-reference.md`](docs/api-reference.md) |
+| Author a new skill | [`docs/skill-authoring.md`](docs/skill-authoring.md) |
+| Contribute code | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| Find the live ventures | [`realize-os.yaml`](realize-os.yaml) and `systems/<key>/` |
+
+## Live Ventures
+
+Source of truth: [`realize-os.yaml`](realize-os.yaml).
+
+| Key | Domain |
+| --- | --- |
+| `realization` | Portugal real-estate operations |
+| `realization-il` | Venture architecture studio (Israel) |
+| `burtucala` | Real estate & PropTech (Portugal) |
+| `arena` | Real-estate development (Arena Habitat SPV) |
+| `homeaid` | Remote management & expat services |
+| `mioliving_partnership` | Italian real-estate partnership |
+| `personal` | Personal & lifestyle intelligence |
+| `personal-investments` | Personal portfolio operations |
+| `company-investments` | Treasury allocation |
+| `realizeos` | RealizeOS engine & platform |
+| `_shared` | Cross-system identity, anti-patterns, shared agents |
+
+Each venture lives under `systems/<key>/` and follows the **FABRIC** structure: `F-foundations/`, `A-agents/`, `B-brain/`, `R-routines/`, `I-insights/`, `C-creations/`. Cross-venture content (identity, methods, deal dossiers) lives under `shared/`.
 
 ## Architecture
 
 ```
-User Message
-    │
-    ▼
-┌─────────────────┐
-│  Channel Layer   │  API / Telegram / CLI
-└────────┬────────┘
-         │
-    ▼
-┌─────────────────┐
-│  Base Handler    │  Session → Skill → Agent routing
-└────────┬────────┘
-         │
-    ▼
-┌─────────────────┐
-│  LLM Router      │  Task classification → model selection
-│  Simple → Flash   │  Content → Sonnet  │  Complex → Opus
-└────────┬────────┘
-         │
-    ▼
-┌─────────────────┐
-│  Prompt Builder   │  Multi-layer assembly from KB files
-│  Identity → Vent. │  → Agent → RAG Context → Memory
-│  → Session →      │  Proactive → Channel Format
-└────────┬────────┘
-         │
-    ▼
-┌─────────────────┐
-│  Tools           │  Google (13) / Web / Browser / MCP
-└────────┬────────┘
-         │
-    ▼
-┌─────────────────┐
-│  Evolution       │  Track → Detect gaps → Suggest skills
-└─────────────────┘
+        ┌────────────┐     ┌────────────┐     ┌────────────┐
+        │ Sufz bot   │     │ Paulo bot  │     │ REST API   │   Channels
+        │ (super)    │     │ (personal) │     │ port 8080  │
+        └─────┬──────┘     └─────┬──────┘     └─────┬──────┘
+              └───────────┬──────┴────────────┬─────┘
+                          ▼                   ▼
+                ┌────────────────────────────────┐
+                │    realize_core.engine          │ Channel-facing entry
+                │    base_handler.process_message │ Session → skill → agent
+                └────────────────┬───────────────┘
+                                 ▼
+                ┌────────────────────────────────┐
+                │       LLM Router               │ classifier → registry
+                │  simple → Gemini Flash         │
+                │  content/strategy → Sonnet 4.6 │
+                │  complex/data → Opus 4.6       │
+                │  code → Sonnet 4.6             │
+                └────────────────┬───────────────┘
+                                 ▼
+                ┌────────────────────────────────┐
+                │     Prompt Builder              │ 12-layer assembly from KB
+                └────────────────┬───────────────┘
+                                 ▼
+                ┌────────────────────────────────┐
+                │   Tools (Google / Web / Browser │
+                │   / MCP / KB / Voice)           │
+                └────────────────┬───────────────┘
+                                 ▼
+                ┌────────────────────────────────┐
+                │ Evolution: gap-detect, suggest, │
+                │ refine (auto-apply OFF)         │
+                └────────────────────────────────┘
 ```
 
-## Templates
+A separate process — **`cli_agent_bot.py`** — runs alongside the engine (also via systemd) to expose a small set of VPS-control commands (Claude Code CLI, Gemini CLI, git, system status) over Telegram for authorized operators. It does **not** go through the engine pipeline above.
 
-Pre-built system configurations:
-
-| Template | Best For |
-| --- | --- |
-| `consulting` | Solo consultants, advisory firms |
-| `agency` | Creative/marketing agencies |
-| `portfolio` | Multi-venture operators |
-| `saas` | SaaS founders, product teams |
-| `ecommerce` | Online stores, D2C ventures |
-| `accounting` | Accountants, bookkeepers, tax advisors |
-| `coaching` | Business/life coaches, course creators |
-| `freelance` | Freelance developers, designers, writers |
+## CLI
 
 ```bash
-python cli.py init --template agency
+python cli.py serve                           # Start FastAPI on 127.0.0.1:8080
+python cli.py bot --name sufz                 # Run a specific Telegram bot
+python cli.py status                          # System status
+python cli.py index                           # Rebuild KB search index
+python cli.py evolve                          # Run gap analysis + skill/prompt suggestions
+python cli.py maintain                        # SQLite VACUUM + ANALYZE
+python cli.py venture create --key NEW        # Scaffold a new venture
+python cli.py venture list
+python cli.py init --template consulting      # (Used to scaffold the public Full distribution)
+python cli.py init --setup setup.yaml         # One-shot init from a setup file
 ```
 
-## CLI Commands
+## REST API (operator quick reference)
 
-```bash
-python cli.py init --template NAME    # Initialize from template
-python cli.py serve --port 8080       # Start API server
-python cli.py bot                     # Start Telegram bot
-python cli.py status                  # Show system status
-python cli.py index                   # Rebuild KB search index
-python cli.py venture create --key X  # Create a new venture
-python cli.py venture delete --key X  # Delete a venture
-python cli.py venture list            # List all ventures
-```
+Base URL: `http://localhost:8080` (or your VPS host). Auth via `Authorization: Bearer $REALIZE_API_KEY` or `X-API-Key`.
 
-## API Endpoints
-
-| Method | Endpoint | Description |
+| Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/api/chat` | Send message, get AI response |
-| GET | `/api/systems` | List all systems |
-| GET | `/api/systems/{key}` | System details |
-| GET | `/api/systems/{key}/agents` | List agents |
-| GET | `/api/systems/{key}/skills` | List skills |
-| POST | `/api/systems/reload` | Hot-reload config |
-| GET | `/health` | Health check |
-| GET | `/status` | Detailed status |
+| POST | `/api/chat` | Send a message, get an AI response |
+| GET / DELETE | `/api/conversations/{system_key}/{user_id}` | History read/clear |
+| GET | `/api/systems[/{key}[/agents\|/skills\|/sessions/{user}]]` | Inspect configured systems |
+| POST | `/api/systems/reload` | Hot-reload `realize-os.yaml` |
+| GET | `/api/analytics[/{key}]` | Usage analytics |
+| GET / POST | `/api/evolution/...` | Suggestions, run, approve, dismiss, refine, changelog |
+| POST | `/webhooks/trigger-skill` | Fire a skill from an external system |
+| POST | `/webhooks/{endpoint_name}` | Generic webhook intake |
+| GET | `/health`, `/status` | Health + detailed status |
 
-## Documentation
+Full schema: [`docs/api-reference.md`](docs/api-reference.md).
 
-- [Getting Started](docs/getting-started.md)
-- [Core Concepts](docs/concepts.md)
-- [Configuration Guide](docs/configuration.md)
-- [Lite Guide](docs/lite-guide.md)
-- [Full Guide](docs/full-guide.md)
-- [Skill Authoring Guide](docs/skill-authoring.md)
-- [API Reference](docs/api-reference.md)
+## Quick Test
+
+```bash
+curl -X POST http://localhost:8080/api/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $REALIZE_API_KEY" \
+  -d '{"message": "Status check across all ventures", "system_key": "realizeos", "user_id": "operator"}'
+```
 
 ## License
 
-Core engine: MIT License
+Engine: MIT. Live KB content under `shared/` and `systems/` is private operational data — do not redistribute.

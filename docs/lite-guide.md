@@ -1,5 +1,7 @@
 # Lite Edition Guide
 
+> Written for the public RealizeOS Lite distribution (Obsidian + Claude Code). The live VPS does not use the Lite path — see the root [`setup-guide.md`](../setup-guide.md). The embedded copy under `realize_lite/` is used as the scaffold source for `cli.py init`.
+
 RealizeOS Lite runs entirely inside Obsidian + Claude Code. No servers, no Docker, no coding required.
 
 ## Requirements

@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # Dev Process — RealizeOS Development Operations Hub
 
 > Single source of truth for what's being worked on, what's planned, and what's been decided.

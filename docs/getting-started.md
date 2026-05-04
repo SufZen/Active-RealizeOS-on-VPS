@@ -1,5 +1,7 @@
 # Getting Started with RealizeOS
 
+> Written for the public RealizeOS distribution. For operating the live VPS in this repo, see the root [`CLAUDE.md`](../CLAUDE.md) and [`setup-guide.md`](../setup-guide.md).
+
 RealizeOS is an AI operations system that gives you a coordinated team of AI agents, each with specialized roles, working from your knowledge base.
 
 ## Choose Your Edition

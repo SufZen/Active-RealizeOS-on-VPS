@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # ADR-001: Platform Strategy — Ship Intelligence Engine, Not Feature Clones
 
 > Status: **Accepted**

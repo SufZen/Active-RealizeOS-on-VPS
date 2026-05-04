@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # RealizeOS — Project Context
 
 > This is the project "constitution". Every session must read this first.

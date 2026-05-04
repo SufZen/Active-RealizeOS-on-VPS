@@ -1,5 +1,7 @@
 # RealizeOS Concepts
 
+> Written for the public RealizeOS distribution. The architecture and concepts described here apply to the live VPS as well; for operator-specific layout and config, see the root [`CLAUDE.md`](../CLAUDE.md) and [`setup-guide.md`](../setup-guide.md).
+
 ## Architecture Overview
 
 ```

@@ -1,3 +1,5 @@
+> **Internal/historical document — not user-facing operator documentation. See root `CLAUDE.md` and `setup-guide.md` for current operating guidance.**
+
 # Suf Zen vs OpenClaw — Analysis Summary
 
 > Analysis date: 2026-03-10

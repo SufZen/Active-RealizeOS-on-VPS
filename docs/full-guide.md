@@ -1,5 +1,7 @@
 # Full Edition Guide
 
+> Written for the public RealizeOS Full distribution (the shippable form). For operating the live VPS in this repo, see the root [`setup-guide.md`](../setup-guide.md).
+
 RealizeOS Full is a self-hosted AI operations engine with multi-LLM routing, REST API, Telegram integration, and a self-evolution system.
 
 ## Requirements

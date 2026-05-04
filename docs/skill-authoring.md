@@ -1,5 +1,7 @@
 # Skill Authoring Guide
 
+> Skill authoring works the same on the live VPS — drop a YAML file under the right venture's `R-routines/skills/` and it's auto-discovered. See [`CLAUDE.md`](../CLAUDE.md) for the full operator context.
+
 Skills are YAML files that define reusable workflows. They live in the `R-routines/skills/` directory of each system.
 
 ## v1 Skills — Simple Pipelines
