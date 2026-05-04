@@ -215,9 +215,25 @@ def load_skills(skills_dir: Path | str = None, kb_path: Path = None):
 
     # Also load from each system's R-routines/skills/ directory
     if kb_path:
+        # Build directory-name → config-key mapping so that systems whose
+        # directory differs from their key (e.g. realization.co.il → realization-il)
+        # get indexed under the correct config key.
+        dir_to_key: dict[str, str] = {}
+        try:
+            from realize_core.config import load_config
+            cfg = load_config()
+            for sys_conf in cfg.get("systems", []):
+                cfg_key = sys_conf["key"]
+                cfg_dir = sys_conf.get("directory", f"systems/{cfg_key}")
+                dir_name = cfg_dir.split("/")[-1] if "/" in cfg_dir else cfg_dir
+                dir_to_key[dir_name] = cfg_key
+        except Exception:
+            pass
+
         for system_dir in kb_path.glob("systems/*/R-routines/skills"):
             if system_dir.exists():
-                system_key = system_dir.parent.parent.name
+                dir_name = system_dir.parent.parent.name
+                system_key = dir_to_key.get(dir_name, dir_name)
                 for yaml_file in system_dir.glob("*.yaml"):
                     skill = _parse_skill_file(yaml_file)
                     if skill:
