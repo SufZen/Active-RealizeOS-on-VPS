@@ -166,7 +166,7 @@ class TestFTSSanitization:
         """FTS5 MATCH with special chars should not raise OperationalError."""
         store.store_memory("sys1", "learning", "Test content for safety")
         # These would normally crash FTS5 MATCH
-        results = store.search_memories('"crash" OR (fail)', system_key="sys1")
+        store.search_memories('"crash" OR (fail)', system_key="sys1")
         # Should return empty or results, not raise
 
 

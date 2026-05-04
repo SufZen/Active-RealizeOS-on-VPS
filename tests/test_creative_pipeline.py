@@ -336,7 +336,7 @@ class TestSessionCleanup:
 
                 # end_session should NOT be called for a completed session
                 with patch("realize_core.pipeline.session.end_session") as mock_end:
-                    new_session = create_session(
+                    create_session(
                         system_key="sys1",
                         user_id="user1",
                         brief="New task",
@@ -352,14 +352,14 @@ class TestSessionCleanup:
                 mock_db.return_value.__enter__ = lambda s: type("Conn", (), {"execute": lambda *a, **kw: None})()
                 mock_db.return_value.__exit__ = lambda *a: None
 
-                session_a = create_session(
+                create_session(
                     system_key="sys_a",
                     user_id="user1",
                     brief="Task A",
                     task_type="content",
                     pipeline=["writer"],
                 )
-                session_b = create_session(
+                create_session(
                     system_key="sys_b",
                     user_id="user1",
                     brief="Task B",

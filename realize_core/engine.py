@@ -47,7 +47,7 @@ def route_to_system(text: str, systems: dict, default: str = "personal") -> str:
     words = set(re.findall(r"[a-zA-Z\u00C0-\u024F]+", text_lower))
 
     # Common words that should not influence routing (too generic)
-    STOP_WORDS = {
+    stop_words = {
         "help", "hi", "hello", "hey", "question", "how", "what", "can",
         "please", "need", "want", "do", "should", "is", "the", "a", "an",
         "this", "that", "it", "my", "me", "i", "we", "you", "your",
@@ -72,7 +72,7 @@ def route_to_system(text: str, systems: dict, default: str = "personal") -> str:
         for _agent, keywords in agent_routing.items():
             for kw in keywords:
                 kw_lower = kw.lower()
-                if kw_lower in STOP_WORDS:
+                if kw_lower in stop_words:
                     continue
                 if kw_lower in matched_keywords:
                     continue

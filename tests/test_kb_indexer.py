@@ -251,7 +251,7 @@ class TestIndexKBFiles:
         """Second indexing run should re-index files with same mtime (safe for NTFS)."""
         db_path = kb_with_files / "test_index.db"
         count1 = index_kb_files(kb_root=str(kb_with_files), db_path=db_path, force=True)
-        count2 = index_kb_files(kb_root=str(kb_with_files), db_path=db_path, force=False)
+        index_kb_files(kb_root=str(kb_with_files), db_path=db_path, force=False)
         assert count1 > 0
         # With < comparison, same-mtime files are re-indexed (safe default for NTFS).
         # This is intentional — prevents missing edits within mtime resolution.
@@ -381,7 +381,7 @@ class TestSanitizeFTSQuery:
         db_path = kb_with_files / "test_index.db"
         index_kb_files(kb_root=str(kb_with_files), db_path=db_path, force=True)
         # These would crash FTS5 without sanitization
-        results = semantic_search('"crash" OR (fail)', db_path=db_path, kb_root=str(kb_with_files))
+        semantic_search('"crash" OR (fail)', db_path=db_path, kb_root=str(kb_with_files))
         # Should return empty or results, not raise
 
 
