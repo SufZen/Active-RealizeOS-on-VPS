@@ -1,0 +1,124 @@
+# AI Adoption Roadmap Generation — v2 Skill
+# Generates the take-home Roadmap document delivered after the first paid
+# Discovery & Roadmap session in the Realization AI Adoption service.
+
+name: ai_adoption_roadmap
+status: active
+version: "1.0"
+description: |
+  Generates a personalized AI Adoption Roadmap document for a client after
+  their Discovery & Roadmap session. The output is the tangible take-home
+  artifact that justifies the paid session and underpins the 7-day
+  money-back guarantee.
+
+system: realization-il
+task_type: consulting
+
+triggers:
+  - roadmap
+  - adoption
+  - ai adoption
+  - discovery session
+  - new client roadmap
+  - paid session
+  - generate roadmap
+
+negative_triggers:
+  - content roadmap
+  - marketing roadmap
+
+steps:
+  - id: synthesize_current_state
+    type: agent
+    agent: orchestrator
+    extra_context_files:
+      - systems/realization.co.il/F-foundations/ai-adoption-service.md
+    prompt: |
+      The user needs to generate an AI Adoption Roadmap for a client.
+
+      Gather from the user or session notes:
+      1. Client name and business type
+      2. Session notes or Fireflies transcript
+      3. Current tools inventory with adoption levels
+      4. Pain points in priority order
+      5. 12-month aspirations
+
+      Then produce a current-state map:
+      - Business at a glance (type, size, revenue model, decision-makers)
+      - Current toolset table (tool / used for / adoption level / notes)
+      - Workflow map (3-5 major workflows with steps, time per cycle, breakdown points, frequency)
+      - Pain points in priority order
+      - Aspirations
+
+  - id: identify_opportunities
+    type: agent
+    agent: strategist
+    inject_context:
+      - synthesize_current_state
+    prompt: |
+      Based on the current-state map, pain points, and aspirations,
+      identify exactly 3 highest-impact AI opportunities scored by Impact × Effort.
+
+      For each opportunity provide:
+      - Problem this solves (1-2 sentences)
+      - What we'd build (specific concrete components, tools used)
+      - Expected impact (time saved, quality change, revenue impact)
+      - Effort to implement (build time, tools to add/change, behavior change required)
+      - Impact × Effort score (High/Medium/Low Impact, Low/Medium/High Effort)
+
+      Also list 3-5 opportunities considered but deprioritized with reasons.
+
+  - id: generate_90_day_plan
+    type: agent
+    agent: builder
+    inject_context:
+      - identify_opportunities
+    prompt: |
+      Build a concrete 90-day roadmap based on the 3 opportunities:
+      - Phase 1 Foundation (Days 1-30): weekly action / owner / deliverable / done-when
+      - Phase 2 Activation (Days 31-60): Opportunity 1 in production, Opportunity 2 in build
+      - Phase 3 Compound (Days 61-90): all three live, first measurement
+      - KPI measurement table (KPI / today baseline / day-90 target / how we measure)
+
+  - id: stack_recommendations
+    type: agent
+    agent: strategist
+    inject_context:
+      - synthesize_current_state
+      - identify_opportunities
+    prompt: |
+      Based on the tools inventory and 3 opportunities, produce stack recommendations:
+      - Tools to ADD (with cost + priority)
+      - Tools to KEEP and use better
+      - Tools to RETIRE
+      - Total monthly stack cost change + estimated time saved + effective ROI
+
+  - id: assemble_document
+    type: agent
+    agent: orchestrator
+    inject_context:
+      - synthesize_current_state
+      - identify_opportunities
+      - generate_90_day_plan
+      - stack_recommendations
+    extra_context_files:
+      - systems/realization.co.il/R-routines/skills/ai-adoption-roadmap-template.md
+    prompt: |
+      Assemble the complete AI Adoption Roadmap document using the template.
+      Fill in all template sections with the outputs from previous steps.
+      Save to C-creations/ai-adoption-roadmap-[client]-[date].md
+
+  - id: review_quality
+    type: agent
+    agent: reviewer
+    inject_context:
+      - assemble_document
+    prompt: |
+      Review the assembled roadmap document. Check:
+      - Is the current-state map specific and actionable (not generic)?
+      - Are the 3 opportunities concrete with named tools and time estimates?
+      - Is the 90-day plan realistic for this client's team size and budget?
+      - Does the document satisfy the 7-day money-back deliverable promise?
+      If issues found, list them with severity. If acceptable, approve.
+
+output_format: text

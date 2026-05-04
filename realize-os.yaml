@@ -54,7 +54,7 @@ systems:
       general: [orchestrator]
 
     agent_routing:
-      orchestrator: [plan, advise, coordinate, brief, venture, studio, pillar, realization.co.il, israel, hebrew, israeli]
+      orchestrator: [plan, advise, coordinate, brief, venture, studio, pillar, realization.co.il, israel, hebrew, israeli, ai adoption, adoption, roadmap, discovery, paid session, new client]
       strategist: [analyze, strategy, market, evaluate, business, model, advisory, consulting, innovation]
       writer: [write, draft, post, article, content, proposal, copy, brand, creative]
       builder: [build, develop, create, launch, venture, product, tool, platform, startup]
