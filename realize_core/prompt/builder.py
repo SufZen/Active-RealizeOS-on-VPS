@@ -454,10 +454,7 @@ def _build_dynamic_kb_context(
                 lines.append(f"`{r['path']}` — {snippet}")
 
         if lines:
-            header = (
-                "## Relevant KB Files\n"
-                "_Use `kb_get(path)` to read full content._\n\n"
-            )
+            header = "## Relevant KB Files\n_Use `kb_get(path)` to read full content._\n\n"
             return header + "\n".join(lines)
     except Exception as e:
         logger.debug(f"Dynamic KB context skipped: {e}")

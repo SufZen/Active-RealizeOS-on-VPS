@@ -1,6 +1,5 @@
 """Tests for realize_api.routes.kb — KB search, resource, file, and index endpoints."""
 
-
 import pytest
 from fastapi.testclient import TestClient
 from realize_api.main import create_app
@@ -58,6 +57,7 @@ class TestKBSearch:
 
     def test_search_returns_json(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/kb/search?q=knowledge")
@@ -72,6 +72,7 @@ class TestKBSearch:
 
     def test_search_valid_layer_accepted(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/kb/search?q=test&layer=B")
@@ -116,6 +117,7 @@ class TestKBFile:
 class TestKBResource:
     def test_resource_not_found(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/kb/resource?path=systems/nonexistent/file.md")
@@ -123,6 +125,7 @@ class TestKBResource:
 
     def test_resource_found(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/kb/resource?path=systems/test-venture/B-brain/knowledge.md")
@@ -138,6 +141,7 @@ class TestKBResource:
 class TestSystemKBIndex:
     def test_unknown_system_returns_404(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/systems/nonexistent/kb/index")
@@ -145,6 +149,7 @@ class TestSystemKBIndex:
 
     def test_known_system_returns_200(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/systems/test-venture/kb/index")
@@ -155,6 +160,7 @@ class TestSystemKBIndex:
 
     def test_layer_filter_applied(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/systems/test-venture/kb/index?layer=B")
@@ -164,6 +170,7 @@ class TestSystemKBIndex:
 
     def test_invalid_layer_rejected(self, api_client, tmp_path):
         from realize_core.kb.indexer import index_kb_files
+
         index_kb_files(str(tmp_path), db_path=tmp_path / "kb_index.db", force=True)
 
         resp = api_client.get("/api/systems/test-venture/kb/index?layer=INVALID")

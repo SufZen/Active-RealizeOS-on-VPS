@@ -13,9 +13,7 @@ def kb_dir(tmp_path):
 
     skills_dir = tmp_path / "systems" / "test-venture" / "R-routines" / "skills"
     skills_dir.mkdir(parents=True)
-    (skills_dir / "test-skill.yaml").write_text(
-        "name: Test Skill\ndescription: A test skill\ntriggers: [test]\n"
-    )
+    (skills_dir / "test-skill.yaml").write_text("name: Test Skill\ndescription: A test skill\ntriggers: [test]\n")
     return tmp_path
 
 

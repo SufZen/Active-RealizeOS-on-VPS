@@ -150,9 +150,11 @@ async def kb_search(
 
         if kb_path:
             from realize_core.config import KB_PATH
+
             db_path = Path(kb_path) / "kb_index.db"
         else:
             from realize_core.config import KB_PATH
+
             db_path = KB_PATH / "kb_index.db"
 
         # Run semantic search for scored results
@@ -168,13 +170,15 @@ async def kb_search(
             if layer and manifest.get(path, {}).get("layer") != layer:
                 continue
             summary = manifest.get(path, {}).get("summary", r.get("snippet", "")[:200])
-            results.append({
-                "path": path,
-                "title": r.get("title", ""),
-                "system_key": r.get("system_key", ""),
-                "summary": summary,
-                "score": round(r.get("score", 0.0), 3),
-            })
+            results.append(
+                {
+                    "path": path,
+                    "title": r.get("title", ""),
+                    "system_key": r.get("system_key", ""),
+                    "summary": summary,
+                    "score": round(r.get("score", 0.0), 3),
+                }
+            )
             if len(results) >= top_k:
                 break
 
@@ -210,6 +214,7 @@ async def kb_outline(
             db_path = Path(kb_path) / "kb_index.db"
         else:
             from realize_core.config import KB_PATH
+
             db_path = KB_PATH / "kb_index.db"
 
         resources = list_resources(system_key=system_key, layer=layer, kind=kind, db_path=db_path)

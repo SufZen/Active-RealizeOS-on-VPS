@@ -265,6 +265,7 @@ def _extract_frontmatter(content: str) -> dict:
         return {}
     try:
         import yaml
+
         return yaml.safe_load(content[3:end]) or {}
     except ImportError:
         return {}
@@ -276,6 +277,7 @@ def _infer_summary_from_yaml(content: str) -> str:
     """Extract summary from skill YAML: use 'description' field."""
     try:
         import yaml
+
         data = yaml.safe_load(content) or {}
         desc = data.get("description", "")
         if desc:
@@ -382,7 +384,19 @@ def _upsert_resource(
                 frontmatter_used=excluded.frontmatter_used,
                 file_mtime=excluded.file_mtime, last_indexed=excluded.last_indexed
             """,
-            (rel_path, title, system_key, layer, kind, tags_json, summary, tokens, int(frontmatter_used), file_mtime, now),
+            (
+                rel_path,
+                title,
+                system_key,
+                layer,
+                kind,
+                tags_json,
+                summary,
+                tokens,
+                int(frontmatter_used),
+                file_mtime,
+                now,
+            ),
         )
     except Exception as e:
         logger.warning(f"Failed to upsert resource {rel_path}: {e}")
@@ -521,8 +535,16 @@ def index_kb_files(kb_root: str, db_path: Path = None, force: bool = False) -> i
                         tags = [tags]
                     tokens = len(full_content) // 4
                     _upsert_resource(
-                        conn, rel_path, title, system_key, summary, tags,
-                        tokens, bool(frontmatter), file_mtime, now,
+                        conn,
+                        rel_path,
+                        title,
+                        system_key,
+                        summary,
+                        tags,
+                        tokens,
+                        bool(frontmatter),
+                        file_mtime,
+                        now,
                     )
                 except Exception as e:
                     logger.warning(f"Failed to index {rel_path}: {e}")
@@ -556,6 +578,7 @@ def index_kb_files(kb_root: str, db_path: Path = None, force: bool = False) -> i
                 title = rel_path
                 try:
                     import yaml as _yaml
+
                     data = _yaml.safe_load(content) or {}
                     title = data.get("name", Path(rel_path).stem.replace("-", " ").title())
                 except Exception:
@@ -563,8 +586,16 @@ def index_kb_files(kb_root: str, db_path: Path = None, force: bool = False) -> i
 
                 tokens = len(content) // 4
                 _upsert_resource(
-                    conn, rel_path, title, system_key, summary, [],
-                    tokens, False, current_mtime, now,
+                    conn,
+                    rel_path,
+                    title,
+                    system_key,
+                    summary,
+                    [],
+                    tokens,
+                    False,
+                    current_mtime,
+                    now,
                 )
                 yaml_count += 1
             except Exception as e:
@@ -671,16 +702,18 @@ def list_resources(
 
         results = []
         for r in rows:
-            results.append({
-                "path": r["path"],
-                "title": r["title"],
-                "system_key": r["system_key"],
-                "layer": r["layer"],
-                "kind": r["kind"],
-                "summary": r["summary"],
-                "tokens": r["tokens"],
-                "tags": json.loads(r["tags"] or "[]"),
-            })
+            results.append(
+                {
+                    "path": r["path"],
+                    "title": r["title"],
+                    "system_key": r["system_key"],
+                    "layer": r["layer"],
+                    "kind": r["kind"],
+                    "summary": r["summary"],
+                    "tokens": r["tokens"],
+                    "tags": json.loads(r["tags"] or "[]"),
+                }
+            )
         # Sort by FABRIC layer order
         results.sort(key=lambda x: (_LAYER_ORDER.get(x["layer"], 99), x["title"] or ""))
         return results

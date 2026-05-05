@@ -19,6 +19,7 @@ def _db_path(request: Request) -> Path:
     if kb_path:
         return Path(kb_path) / "kb_index.db"
     from realize_core.config import KB_PATH
+
     return KB_PATH / "kb_index.db"
 
 
@@ -46,14 +47,16 @@ async def kb_search(
             if layer and manifest.get(path, {}).get("layer") != layer:
                 continue
             summary = manifest.get(path, {}).get("summary", r.get("snippet", "")[:200])
-            results.append({
-                "path": path,
-                "title": r.get("title", ""),
-                "system_key": r.get("system_key", ""),
-                "layer": manifest.get(path, {}).get("layer"),
-                "summary": summary,
-                "score": round(r.get("score", 0.0), 3),
-            })
+            results.append(
+                {
+                    "path": path,
+                    "title": r.get("title", ""),
+                    "system_key": r.get("system_key", ""),
+                    "layer": manifest.get(path, {}).get("layer"),
+                    "summary": summary,
+                    "score": round(r.get("score", 0.0), 3),
+                }
+            )
             if len(results) >= top_k:
                 break
 
@@ -96,6 +99,7 @@ async def get_file(
     kb_path = getattr(request.app.state, "kb_path", None)
     if kb_path is None:
         from realize_core.config import KB_PATH
+
         kb_path = KB_PATH
 
     kb_base = Path(kb_path).resolve()

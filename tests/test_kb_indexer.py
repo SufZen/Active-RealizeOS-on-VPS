@@ -457,12 +457,7 @@ class TestDatabaseConfig:
 
     def test_system_key_index_exists(self, index_db):
         conn = _get_conn(index_db)
-        indexes = {
-            row[0]
-            for row in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='index'"
-            ).fetchall()
-        }
+        indexes = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='index'").fetchall()}
         assert "idx_kb_system_key" in indexes
         conn.close()
 
@@ -482,6 +477,7 @@ class TestMtimeDetection:
         # Modify content without changing mtime (simulate same-second edit)
         identity_file = kb_with_files / "systems" / "venture1" / "F-foundations" / "venture-identity.md"
         import os
+
         stat = os.stat(identity_file)
         identity_file.write_text("# Updated Identity\nNew content")
         # Restore original mtime
