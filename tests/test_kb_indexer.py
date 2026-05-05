@@ -17,14 +17,20 @@ import pytest
 from realize_core.kb.indexer import (
     _build_search_dirs,
     _bytes_to_vec,
+    _classify_kind,
+    _classify_layer,
     _cosine_similarity,
     _detect_system,
+    _extract_frontmatter,
     _extract_title,
     _get_conn,
+    _infer_summary,
     _init_index_db,
     _merge_hybrid,
     _sanitize_fts_query,
+    get_resource,
     index_kb_files,
+    list_resources,
     semantic_search,
 )
 
@@ -451,12 +457,7 @@ class TestDatabaseConfig:
 
     def test_system_key_index_exists(self, index_db):
         conn = _get_conn(index_db)
-        indexes = {
-            row[0]
-            for row in conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='index'"
-            ).fetchall()
-        }
+        indexes = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='index'").fetchall()}
         assert "idx_kb_system_key" in indexes
         conn.close()
 
@@ -476,6 +477,7 @@ class TestMtimeDetection:
         # Modify content without changing mtime (simulate same-second edit)
         identity_file = kb_with_files / "systems" / "venture1" / "F-foundations" / "venture-identity.md"
         import os
+
         stat = os.stat(identity_file)
         identity_file.write_text("# Updated Identity\nNew content")
         # Restore original mtime
@@ -485,3 +487,213 @@ class TestMtimeDetection:
         # With < comparison, same mtime should NOT skip (count2 >= 1)
         # This is the safer behavior for NTFS
         assert count2 >= 1
+
+
+# ---------------------------------------------------------------------------
+# New: layer and kind classification
+# ---------------------------------------------------------------------------
+
+
+class TestClassify:
+    def test_classify_layer_foundations(self):
+        assert _classify_layer("systems/v1/F-foundations/file.md") == "F"
+
+    def test_classify_layer_brain(self):
+        assert _classify_layer("systems/v1/B-brain/knowledge.md") == "B"
+
+    def test_classify_layer_creations(self):
+        assert _classify_layer("systems/v1/C-creations/draft.md") == "C"
+
+    def test_classify_layer_shared(self):
+        assert _classify_layer("shared/identity.md") == "shared"
+
+    def test_classify_layer_skill_yaml(self):
+        assert _classify_layer("systems/v1/R-routines/skills/skill.yaml") == "skill"
+
+    def test_classify_kind_agent(self):
+        assert _classify_kind("systems/v1/A-agents/writer.md") == "agent"
+
+    def test_classify_kind_skill_yaml(self):
+        assert _classify_kind("systems/v1/R-routines/skills/skill.yaml") == "skill_yaml"
+
+    def test_classify_kind_md(self):
+        assert _classify_kind("systems/v1/B-brain/knowledge.md") == "md"
+
+
+# ---------------------------------------------------------------------------
+# New: frontmatter parsing
+# ---------------------------------------------------------------------------
+
+
+class TestFrontmatter:
+    def test_parses_valid_frontmatter(self):
+        pytest.importorskip("yaml")
+        content = "---\nsummary: This is a summary\ntags: [ai, planning]\n---\n# Title\n"
+        fm = _extract_frontmatter(content)
+        assert fm.get("summary") == "This is a summary"
+        assert "ai" in fm.get("tags", [])
+
+    def test_no_frontmatter_returns_empty(self):
+        content = "# Just a heading\nContent here."
+        fm = _extract_frontmatter(content)
+        assert fm == {}
+
+    def test_malformed_frontmatter_returns_empty(self):
+        pytest.importorskip("yaml")
+        content = "---\ninvalid: [unclosed\n---\n# Title"
+        fm = _extract_frontmatter(content)
+        assert isinstance(fm, dict)
+
+    def test_summary_inference_from_fm(self):
+        pytest.importorskip("yaml")
+        content = "---\nsummary: FM summary\n---\n# Title\nOther content."
+        fm = _extract_frontmatter(content)
+        summary = _infer_summary(content, "path/file.md", fm)
+        assert summary == "FM summary"
+
+    def test_summary_inference_from_first_sentence(self):
+        content = "# Title\nThis is the first sentence."
+        summary = _infer_summary(content, "path/file.md", {})
+        assert "first sentence" in summary
+
+    def test_summary_inference_fallback_to_filename(self):
+        content = "---\n---\n"
+        summary = _infer_summary(content, "path/my-file.md", {})
+        assert "My File" in summary
+
+
+# ---------------------------------------------------------------------------
+# New: C-creations and skill YAML indexing
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def kb_extended(tmp_path):
+    """KB with C-creations and skill YAML files added."""
+    sys_dir = tmp_path / "systems" / "venture1"
+
+    # Existing F-foundations
+    (sys_dir / "F-foundations").mkdir(parents=True)
+    (sys_dir / "F-foundations" / "identity.md").write_text("# Identity\nWe are a test venture.")
+
+    # C-creations (previously not indexed)
+    (sys_dir / "C-creations").mkdir(parents=True)
+    (sys_dir / "C-creations" / "proposal.md").write_text("# Proposal\nA detailed proposal for a client.")
+
+    # Skill YAML (v1 shape)
+    skills_dir = sys_dir / "R-routines" / "skills"
+    skills_dir.mkdir(parents=True)
+    (skills_dir / "content-pipeline.yaml").write_text(
+        "name: Content Pipeline\ndescription: Draft and review content\ntriggers: [write, draft]\npipeline: [writer, reviewer]\n"
+    )
+
+    # Skill YAML (v2 shape)
+    (skills_dir / "research-workflow.yaml").write_text(
+        "name: Research Workflow\ndescription: Multi-step research\ntriggers: [research]\nsteps:\n  - type: agent\n    agent: analyst\n"
+    )
+
+    return tmp_path
+
+
+class TestExtendedIndexing:
+    def test_c_creations_indexed(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        count = index_kb_files(str(kb_extended), db_path=db_path, force=True)
+        assert count > 0
+
+        resources = list_resources(system_key="venture1", layer="C", db_path=db_path)
+        paths = [r["path"] for r in resources]
+        assert any("proposal" in p for p in paths)
+
+    def test_skill_yaml_in_manifest(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(system_key="venture1", kind="skill_yaml", db_path=db_path)
+        assert len(resources) >= 2
+
+    def test_skill_yaml_summary_from_description(self, kb_extended):
+        pytest.importorskip("yaml")
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(system_key="venture1", kind="skill_yaml", db_path=db_path)
+        summaries = [r.get("summary", "") for r in resources]
+        assert any("Draft and review" in s for s in summaries)
+
+    def test_v2_skill_yaml_indexed(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(system_key="venture1", kind="skill_yaml", db_path=db_path)
+        titles = [r.get("title", "") for r in resources]
+        assert any("Research" in t for t in titles)
+
+
+# ---------------------------------------------------------------------------
+# New: list_resources and get_resource
+# ---------------------------------------------------------------------------
+
+
+class TestResourceManifest:
+    def test_list_resources_all(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(db_path=db_path)
+        assert len(resources) > 0
+        for r in resources:
+            assert "path" in r
+            assert "title" in r
+            assert "layer" in r
+
+    def test_list_resources_by_system(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(system_key="venture1", db_path=db_path)
+        assert all(r["system_key"] == "venture1" for r in resources)
+
+    def test_list_resources_by_layer(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(layer="F", db_path=db_path)
+        assert all(r["layer"] == "F" for r in resources)
+
+    def test_list_resources_sorted_by_layer(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(system_key="venture1", db_path=db_path)
+        layers = [r["layer"] for r in resources]
+        layer_order = {"F": 0, "A": 1, "B": 2, "R": 3, "I": 4, "C": 5, "shared": 6, "skill": 7}
+        order_values = [layer_order.get(lyr, 99) for lyr in layers]
+        assert order_values == sorted(order_values)
+
+    def test_get_resource_found(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resources = list_resources(system_key="venture1", db_path=db_path)
+        path = resources[0]["path"]
+
+        resource = get_resource(path, db_path=db_path)
+        assert resource is not None
+        assert resource["path"] == path
+
+    def test_get_resource_not_found(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        resource = get_resource("systems/nonexistent/file.md", db_path=db_path)
+        assert resource is None
+
+    def test_manifest_table_created(self, kb_extended):
+        db_path = kb_extended / "test.db"
+        index_kb_files(str(kb_extended), db_path=db_path, force=True)
+
+        conn = _get_conn(db_path)
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        assert "kb_resources" in tables
+        conn.close()

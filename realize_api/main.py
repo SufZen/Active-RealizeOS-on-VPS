@@ -21,7 +21,7 @@ from realize_api.middleware import (
     RequestSizeLimitMiddleware,
     SecurityHeadersMiddleware,
 )
-from realize_api.routes import chat, evolution, health, systems, webhooks
+from realize_api.routes import chat, evolution, health, kb, systems, webhooks
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ async def lifespan(app: FastAPI):
     # Initialize LLM routing config from YAML
     try:
         from realize_core.llm.router import load_routing_config
+
         load_routing_config(config)
     except Exception as e:
         logger.debug(f"LLM routing config loading skipped: {e}")
@@ -64,6 +65,7 @@ async def lifespan(app: FastAPI):
     # Initialize analytics tables (for evolution tracking)
     try:
         from realize_core.evolution.analytics import init_analytics_tables
+
         init_analytics_tables()
     except Exception as e:
         logger.debug(f"Analytics tables init skipped: {e}")
@@ -105,10 +107,7 @@ async def lifespan(app: FastAPI):
         for path in config_paths:
             if path.exists():
                 webhook_channel.load_from_yaml(path)
-                logger.info(
-                    f"Loaded webhook endpoints from {path} "
-                    f"({webhook_channel.endpoint_count} endpoints)"
-                )
+                logger.info(f"Loaded webhook endpoints from {path} ({webhook_channel.endpoint_count} endpoints)")
                 break
         app.state.webhook_channel = webhook_channel
     except Exception as e:
@@ -165,9 +164,7 @@ def create_app() -> FastAPI:
     # so the LAST added middleware runs FIRST on requests.
 
     # CORS
-    allowed_origins = os.environ.get(
-        "CORS_ORIGINS", "http://localhost:3000,http://localhost:8080"
-    ).split(",")
+    allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
     if "*" in allowed_origins:
         logger.warning(
             "CORS_ORIGINS contains '*' — this is insecure for production. "
@@ -192,9 +189,7 @@ def create_app() -> FastAPI:
     if api_key:
         app.add_middleware(APIKeyMiddleware, api_key=api_key)
     else:
-        logger.warning(
-            "REALIZE_API_KEY not set — API authentication is disabled (development mode)"
-        )
+        logger.warning("REALIZE_API_KEY not set — API authentication is disabled (development mode)")
 
     # Rate limiting
     app.add_middleware(RateLimitMiddleware)
@@ -208,6 +203,7 @@ def create_app() -> FastAPI:
     # --- Routes ---
     app.include_router(chat.router, prefix="/api", tags=["Chat"])
     app.include_router(systems.router, prefix="/api", tags=["Systems"])
+    app.include_router(kb.router, prefix="/api", tags=["KB"])
     app.include_router(health.router, tags=["Health"])
     app.include_router(webhooks.router, tags=["Webhooks"])
     app.include_router(evolution.router, prefix="/api", tags=["Evolution"])

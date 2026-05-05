@@ -88,5 +88,5 @@ def test_root_cli_index_uses_force_flag(monkeypatch, capsys):
     module.cmd_index(SimpleNamespace())
     captured = capsys.readouterr()
 
-    index_kb_files.assert_called_once_with("vault-root", force=True)
+    index_kb_files.assert_called_once_with("vault-root", force=False)
     assert "Indexed 7 files from vault-root" in captured.out

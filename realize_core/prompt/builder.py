@@ -36,7 +36,7 @@ LAYER_CONFIG = {
     "venture": {"max_chars": 2500, "priority": _PRIORITY_HIGH, "compressible": False},
     "venture_voice": {"max_chars": 1500, "priority": _PRIORITY_MEDIUM, "compressible": True, "compressed_max": 800},
     "session": {"max_chars": 2000, "priority": _PRIORITY_HIGH, "compressible": False},
-    "rag": {"max_chars": 2400, "priority": _PRIORITY_MEDIUM, "compressible": True, "compressed_max": 1200},
+    "kb_index": {"max_chars": 1200, "priority": _PRIORITY_MEDIUM, "compressible": True, "compressed_max": 600},
     "extra": {"max_chars": 2000, "priority": _PRIORITY_MEDIUM, "compressible": True, "compressed_max": 1000},
     "memory": {"max_chars": 1500, "priority": _PRIORITY_LOW, "compressible": True, "compressed_max": 750},
     "cross_system": {"max_chars": 2500, "priority": _PRIORITY_LOW, "compressible": True, "compressed_max": 1200},
@@ -62,6 +62,8 @@ _file_mtimes: dict[str, float] = {}  # normalized_path → last known mtime
 
 _semantic_search = None
 _semantic_search_checked = False
+_list_resources = None
+_list_resources_checked = False
 
 
 def _get_semantic_search():
@@ -79,6 +81,23 @@ def _get_semantic_search():
     except Exception as e:
         logger.debug(f"KB indexer failed to load: {e}")
     return _semantic_search
+
+
+def _get_list_resources():
+    """Lazy-load list_resources function once."""
+    global _list_resources, _list_resources_checked
+    if _list_resources_checked:
+        return _list_resources
+    _list_resources_checked = True
+    try:
+        from realize_core.kb.indexer import list_resources
+
+        _list_resources = list_resources
+    except ImportError:
+        logger.debug("KB indexer not available — kb_index layer disabled")
+    except Exception as e:
+        logger.debug(f"KB indexer failed to load: {e}")
+    return _list_resources
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +220,7 @@ def _read_kb_file(kb_path: Path, relative_path: str, max_chars: int = 6000) -> s
         File content string, or empty string if file not found.
     """
     cache_key = _normalize_cache_key(relative_path)
-    file_path = kb_path / relative_path
+    file_path = kb_path / cache_key
 
     # Check if cached version is still valid
     if cache_key in _file_cache:
@@ -382,14 +401,39 @@ def _build_dynamic_kb_context(
     system_key: str,
     user_message: str,
     extra_context_files: list[str] | None = None,
-    max_results: int = 5,
-    max_chars_per_result: int = 800,
 ) -> str:
     """
-    Query the KB index for content relevant to the user's message.
-    Skips files already loaded as static extra_context_files.
-    Only triggers for messages longer than 10 characters.
+    Build a compact KB table of contents for the active system.
+
+    Emits one line per resource (path — summary), ordered by FABRIC layer.
+    Agents use kb_get(path) or kb_search(query) to fetch full content on demand.
+    Falls back to a minimal semantic-search result list if the manifest is empty.
     """
+    list_fn = _get_list_resources()
+
+    if list_fn is not None:
+        try:
+            resources = list_fn(system_key=system_key)
+            if resources:
+                loaded_paths = set(extra_context_files or [])
+                lines = []
+                for r in resources:
+                    if r["path"] in loaded_paths:
+                        continue
+                    summary = r.get("summary") or ""
+                    layer = r.get("layer", "")
+                    lines.append(f"`{r['path']}` [{layer}] — {summary}")
+
+                if lines:
+                    header = (
+                        "## Knowledge Base Index\n"
+                        "_Use `kb_get(path)` to read a file, `kb_search(query)` for semantic search._\n\n"
+                    )
+                    return header + "\n".join(lines)
+        except Exception as e:
+            logger.debug(f"KB manifest ToC failed, falling back to semantic search: {e}")
+
+    # Fallback: semantic search result paths (no full content)
     if not user_message or len(user_message) < 10:
         return ""
 
@@ -398,23 +442,20 @@ def _build_dynamic_kb_context(
         return ""
 
     try:
-        results = search_fn(user_message, system_key=system_key, top_k=max_results + 2)
+        results = search_fn(user_message, system_key=system_key, top_k=5)
         if not results:
             return ""
 
         loaded_paths = set(extra_context_files or [])
-        parts = []
+        lines = []
         for r in results:
-            if len(parts) >= max_results:
-                break
-            if r["path"] in loaded_paths:
-                continue
-            content = _read_kb_file(kb_path, r["path"], max_chars=max_chars_per_result)
-            if content:
-                parts.append(f"**{r['title']}** ({r['path']})\n{content}")
+            if r["path"] not in loaded_paths:
+                snippet = r.get("snippet", "")[:120]
+                lines.append(f"`{r['path']}` — {snippet}")
 
-        if parts:
-            return "## Relevant Knowledge Base Context\n" + "\n\n---\n".join(parts)
+        if lines:
+            header = "## Relevant KB Files\n_Use `kb_get(path)` to read full content._\n\n"
+            return header + "\n".join(lines)
     except Exception as e:
         logger.debug(f"Dynamic KB context skipped: {e}")
 
@@ -637,10 +678,10 @@ def build_system_prompt(
     if session_ctx:
         layers.append(("session", session_ctx, "session"))
 
-    # Layer 5: Dynamic KB context (RAG — MEDIUM priority)
+    # Layer 5: KB index ToC (MEDIUM priority — compact compass, agents navigate on demand)
     dynamic_kb = _build_dynamic_kb_context(kb_path, system_key, user_message, extra_context_files)
     if dynamic_kb:
-        layers.append(("rag", dynamic_kb, "rag"))
+        layers.append(("kb_index", dynamic_kb, "kb_index"))
 
     # Layer 6: Extra context files (user-loaded — MEDIUM priority)
     if extra_context_files:

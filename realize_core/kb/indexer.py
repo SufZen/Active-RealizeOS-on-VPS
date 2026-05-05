@@ -7,8 +7,15 @@ Uses fastembed for local-only embeddings (no API calls, no data leaving the mach
 Falls back to FTS5-only search when fastembed is not installed.
 
 Index stored in SQLite for persistence across restarts.
+
+Tables:
+  kb_files    — full content + embeddings for semantic search (markdown only)
+  kb_fts      — FTS5 virtual table over kb_files
+  kb_resources — lightweight manifest: path, title, layer, kind, summary, tokens
+                 Covers markdown + skill YAMLs; used by agents as a ToC.
 """
 
+import json
 import logging
 import sqlite3
 import struct
@@ -20,6 +27,9 @@ logger = logging.getLogger(__name__)
 # Embedding model (lazy-loaded)
 _embedder = None
 _embedder_available = None
+
+# FABRIC layer order for sorting
+_LAYER_ORDER = {"F": 0, "A": 1, "B": 2, "R": 3, "I": 4, "C": 5, "shared": 6, "skill": 7}
 
 
 def _get_conn(db_path: Path) -> sqlite3.Connection:
@@ -75,6 +85,27 @@ def _init_index_db(db_path: Path):
         END
     """)
     conn.execute("CREATE INDEX IF NOT EXISTS idx_kb_system_key ON kb_files(system_key)")
+
+    # Manifest table — lightweight resource registry (markdown + skill YAMLs)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS kb_resources (
+            path TEXT PRIMARY KEY,
+            title TEXT,
+            system_key TEXT,
+            layer TEXT,
+            kind TEXT,
+            tags TEXT,
+            summary TEXT,
+            tokens INTEGER,
+            frontmatter_used INTEGER DEFAULT 0,
+            file_mtime REAL DEFAULT 0,
+            last_indexed TEXT
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_res_system ON kb_resources(system_key)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_res_layer ON kb_resources(layer)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_res_kind ON kb_resources(kind)")
+
     conn.commit()
     conn.close()
 
@@ -161,13 +192,14 @@ def _build_search_dirs(kb_path: Path) -> list[str]:
     """
     Auto-discover FABRIC directories to index from all systems.
     No hardcoded paths — scans the systems/ directory dynamically.
+    Includes C-creations alongside the original F/A/B/R/I set.
     """
     dirs = []
     systems_dir = kb_path / "systems"
     if systems_dir.exists():
         for system_dir in systems_dir.iterdir():
             if system_dir.is_dir() and not system_dir.name.startswith("."):
-                for fabric_dir in ["F-foundations", "A-agents", "B-brain", "R-routines", "I-insights"]:
+                for fabric_dir in ["F-foundations", "A-agents", "B-brain", "R-routines", "I-insights", "C-creations"]:
                     subdir = system_dir / fabric_dir
                     if subdir.exists():
                         dirs.append(str(subdir.relative_to(kb_path)))
@@ -178,6 +210,105 @@ def _build_search_dirs(kb_path: Path) -> list[str]:
         dirs.append("shared")
 
     return dirs
+
+
+def _build_skill_yaml_paths(kb_path: Path) -> list[Path]:
+    """Collect all skill YAML files under R-routines/skills/ across all systems."""
+    yamls = []
+    systems_dir = kb_path / "systems"
+    if not systems_dir.exists():
+        return yamls
+    for system_dir in systems_dir.iterdir():
+        if not system_dir.is_dir() or system_dir.name.startswith("."):
+            continue
+        skills_dir = system_dir / "R-routines" / "skills"
+        if skills_dir.exists():
+            yamls.extend(skills_dir.glob("*.yaml"))
+    return yamls
+
+
+def _classify_layer(rel_path: str) -> str:
+    """Classify a resource into a FABRIC layer letter (or 'shared'/'skill')."""
+    parts = Path(rel_path).parts
+    # skill yamls get their own kind
+    if rel_path.endswith(".yaml"):
+        return "skill"
+    # systems/<key>/<FABRIC-dir>/...
+    if len(parts) >= 3 and parts[0] == "systems":
+        fabric = parts[2]
+        prefix = fabric[0].upper() if fabric else ""
+        if prefix in ("F", "A", "B", "R", "I", "C"):
+            return prefix
+    # shared/ top-level content
+    if parts[0] == "shared":
+        return "shared"
+    return "B"  # default fallback
+
+
+def _classify_kind(rel_path: str) -> str:
+    """Classify resource kind from its path."""
+    p = Path(rel_path)
+    if p.suffix == ".yaml":
+        return "skill_yaml"
+    parts = p.parts
+    if len(parts) >= 3 and parts[0] == "systems" and parts[2] == "A-agents":
+        return "agent"
+    return "md"
+
+
+def _extract_frontmatter(content: str) -> dict:
+    """Parse optional YAML frontmatter (--- ... ---) from file content."""
+    if not content.startswith("---"):
+        return {}
+    end = content.find("\n---", 3)
+    if end == -1:
+        return {}
+    try:
+        import yaml
+
+        return yaml.safe_load(content[3:end]) or {}
+    except ImportError:
+        return {}
+    except Exception:
+        return {}
+
+
+def _infer_summary_from_yaml(content: str) -> str:
+    """Extract summary from skill YAML: use 'description' field."""
+    try:
+        import yaml
+
+        data = yaml.safe_load(content) or {}
+        desc = data.get("description", "")
+        if desc:
+            return str(desc)[:200]
+        name = data.get("name", "")
+        triggers = data.get("triggers", [])
+        if triggers:
+            return f"{name} — triggers: {', '.join(str(t) for t in triggers[:3])}"[:200]
+        return name[:200]
+    except Exception:
+        return ""
+
+
+def _infer_summary(content: str, path: str, frontmatter: dict, is_yaml: bool = False) -> str:
+    """Derive a 1-line summary from frontmatter, then content, then filename."""
+    # 1. Frontmatter summary/description
+    fm_summary = frontmatter.get("summary") or frontmatter.get("description", "")
+    if fm_summary:
+        return str(fm_summary)[:200]
+
+    if is_yaml:
+        return _infer_summary_from_yaml(content)
+
+    # 2. First non-heading, non-empty line of markdown
+    for line in content.split("\n"):
+        stripped = line.strip()
+        if stripped and not stripped.startswith("#") and not stripped.startswith("---"):
+            return stripped[:200]
+
+    # 3. Filename fallback
+    return Path(path).stem.replace("-", " ").title()
 
 
 def _cleanup_stale_entries(conn: sqlite3.Connection, seen_paths: set[str], existing_mtimes: dict) -> int:
@@ -195,6 +326,25 @@ def _cleanup_stale_entries(conn: sqlite3.Connection, seen_paths: set[str], exist
     return removed
 
 
+def _cleanup_stale_resources(conn: sqlite3.Connection, seen_paths: set[str]) -> int:
+    """Remove manifest entries for resources that no longer exist on disk."""
+    try:
+        existing = {r["path"] for r in conn.execute("SELECT path FROM kb_resources").fetchall()}
+    except Exception:
+        return 0
+    stale = existing - seen_paths
+    removed = 0
+    for path in stale:
+        try:
+            conn.execute("DELETE FROM kb_resources WHERE path = ?", (path,))
+            removed += 1
+        except Exception:
+            pass
+    if removed:
+        logger.info(f"Removed {removed} stale KB resource entries")
+    return removed
+
+
 def _sanitize_fts_query(query: str) -> str:
     """Sanitize a query string for FTS5 MATCH to prevent OperationalError."""
     # Remove FTS5 special operators that could cause parse errors
@@ -205,9 +355,57 @@ def _sanitize_fts_query(query: str) -> str:
     return " ".join(words).strip()
 
 
+def _upsert_resource(
+    conn: sqlite3.Connection,
+    rel_path: str,
+    title: str,
+    system_key: str,
+    summary: str,
+    tags: list,
+    tokens: int,
+    frontmatter_used: bool,
+    file_mtime: float,
+    now: str,
+):
+    """Upsert a row into kb_resources."""
+    layer = _classify_layer(rel_path)
+    kind = _classify_kind(rel_path)
+    tags_json = json.dumps(tags)
+    try:
+        conn.execute(
+            """
+            INSERT INTO kb_resources
+                (path, title, system_key, layer, kind, tags, summary, tokens, frontmatter_used, file_mtime, last_indexed)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(path) DO UPDATE SET
+                title=excluded.title, system_key=excluded.system_key,
+                layer=excluded.layer, kind=excluded.kind, tags=excluded.tags,
+                summary=excluded.summary, tokens=excluded.tokens,
+                frontmatter_used=excluded.frontmatter_used,
+                file_mtime=excluded.file_mtime, last_indexed=excluded.last_indexed
+            """,
+            (
+                rel_path,
+                title,
+                system_key,
+                layer,
+                kind,
+                tags_json,
+                summary,
+                tokens,
+                int(frontmatter_used),
+                file_mtime,
+                now,
+            ),
+        )
+    except Exception as e:
+        logger.warning(f"Failed to upsert resource {rel_path}: {e}")
+
+
 def index_kb_files(kb_root: str, db_path: Path = None, force: bool = False) -> int:
     """
     Walk all .md files in KB directories, index their content and embeddings.
+    Also indexes skill YAMLs into the kb_resources manifest (without embeddings).
     Uses incremental indexing — only re-indexes files whose mtime changed.
 
     Args:
@@ -234,6 +432,15 @@ def index_kb_files(kb_root: str, db_path: Path = None, force: bool = False) -> i
             try:
                 rows = conn.execute("SELECT path, file_mtime FROM kb_files").fetchall()
                 existing_mtimes = {r["path"]: r["file_mtime"] or 0 for r in rows}
+            except Exception:
+                pass
+
+        # Also load existing resource mtimes for incremental check
+        existing_resource_mtimes = {}
+        if not force:
+            try:
+                rows = conn.execute("SELECT path, file_mtime FROM kb_resources").fetchall()
+                existing_resource_mtimes = {r["path"]: r["file_mtime"] or 0 for r in rows}
             except Exception:
                 pass
 
@@ -271,65 +478,136 @@ def index_kb_files(kb_root: str, db_path: Path = None, force: bool = False) -> i
                     title = _extract_title(content, rel_path)
                     system_key = _detect_system(rel_path)
                     indexed_content = content[:5000]
-                    file_data.append((rel_path, title, system_key, indexed_content, current_mtime))
+                    file_data.append((rel_path, title, system_key, indexed_content, current_mtime, content))
                 except Exception as e:
                     logger.warning(f"Failed to read {md_file}: {e}")
 
         if not file_data:
             # Still clean up stale entries even if no files changed
             _cleanup_stale_entries(conn, seen_paths, existing_mtimes)
+            _cleanup_stale_resources(conn, seen_paths)
             conn.commit()
             logger.info(f"KB index: 0 files changed ({skipped} unchanged)")
-            return 0
+            # Still process skill YAMLs (they don't go into kb_files)
+        else:
+            # Batch embed if available
+            embedder = _get_embedder()
+            embeddings_map = {}
+            if embedder and file_data:
+                try:
+                    texts = [f"{title} {content[:2000]}" for _, title, _, content, _, _ in file_data]
+                    vectors = list(embedder.embed(texts))
+                    for i, (rel_path, _, _, _, _, _) in enumerate(file_data):
+                        vec = vectors[i]
+                        embeddings_map[rel_path] = struct.pack(f"{len(vec)}f", *vec)
+                    logger.info(f"Generated embeddings for {len(vectors)} files")
+                except Exception as e:
+                    logger.warning(f"Batch embedding failed: {e}")
 
-        # Batch embed if available
-        embedder = _get_embedder()
-        embeddings_map = {}
-        if embedder and file_data:
-            try:
-                texts = [f"{title} {content[:2000]}" for _, title, _, content, _ in file_data]
-                vectors = list(embedder.embed(texts))
-                for i, (rel_path, _, _, _, _) in enumerate(file_data):
-                    vec = vectors[i]
-                    embeddings_map[rel_path] = struct.pack(f"{len(vec)}f", *vec)
-                logger.info(f"Generated embeddings for {len(vectors)} files")
-            except Exception as e:
-                logger.warning(f"Batch embedding failed: {e}")
-
-        # Upsert changed files
-        for rel_path, title, system_key, indexed_content, file_mtime in file_data:
-            try:
-                embedding_blob = embeddings_map.get(rel_path)
-                existing = conn.execute("SELECT id FROM kb_files WHERE path = ?", (rel_path,)).fetchone()
-                if existing:
-                    if embedding_blob:
-                        conn.execute(
-                            "UPDATE kb_files SET title=?, content=?, system_key=?, embedding=?, file_mtime=?, last_indexed=? WHERE path=?",
-                            (title, indexed_content, system_key, embedding_blob, file_mtime, now, rel_path),
-                        )
+            # Upsert changed files
+            for rel_path, title, system_key, indexed_content, file_mtime, full_content in file_data:
+                try:
+                    embedding_blob = embeddings_map.get(rel_path)
+                    existing = conn.execute("SELECT id FROM kb_files WHERE path = ?", (rel_path,)).fetchone()
+                    if existing:
+                        if embedding_blob:
+                            conn.execute(
+                                "UPDATE kb_files SET title=?, content=?, system_key=?, embedding=?, file_mtime=?, last_indexed=? WHERE path=?",
+                                (title, indexed_content, system_key, embedding_blob, file_mtime, now, rel_path),
+                            )
+                        else:
+                            conn.execute(
+                                "UPDATE kb_files SET title=?, content=?, system_key=?, file_mtime=?, last_indexed=? WHERE path=?",
+                                (title, indexed_content, system_key, file_mtime, now, rel_path),
+                            )
                     else:
                         conn.execute(
-                            "UPDATE kb_files SET title=?, content=?, system_key=?, file_mtime=?, last_indexed=? WHERE path=?",
-                            (title, indexed_content, system_key, file_mtime, now, rel_path),
+                            "INSERT INTO kb_files (path, title, system_key, content, embedding, file_mtime, last_indexed) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                            (rel_path, title, system_key, indexed_content, embedding_blob, file_mtime, now),
                         )
-                else:
-                    conn.execute(
-                        "INSERT INTO kb_files (path, title, system_key, content, embedding, file_mtime, last_indexed) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        (rel_path, title, system_key, indexed_content, embedding_blob, file_mtime, now),
+                    count += 1
+
+                    # Update resource manifest for this markdown file
+                    frontmatter = _extract_frontmatter(full_content)
+                    summary = _infer_summary(full_content, rel_path, frontmatter)
+                    tags = frontmatter.get("tags", [])
+                    if isinstance(tags, str):
+                        tags = [tags]
+                    tokens = len(full_content) // 4
+                    _upsert_resource(
+                        conn,
+                        rel_path,
+                        title,
+                        system_key,
+                        summary,
+                        tags,
+                        tokens,
+                        bool(frontmatter),
+                        file_mtime,
+                        now,
                     )
-                count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to index {rel_path}: {e}")
+
+            # Clean up entries for files that no longer exist on disk
+            _cleanup_stale_entries(conn, seen_paths, existing_mtimes)
+
+        # ----------------------------------------------------------------
+        # Index skill YAMLs into kb_resources (no embedding, no kb_files)
+        # ----------------------------------------------------------------
+        yaml_files = _build_skill_yaml_paths(kb_path)
+        yaml_count = 0
+        for yaml_file in yaml_files:
+            try:
+                rel_path = str(yaml_file.relative_to(kb_path))
+                seen_paths.add(rel_path)
+                current_mtime = yaml_file.stat().st_mtime
+
+                if not force and rel_path in existing_resource_mtimes:
+                    if current_mtime <= existing_resource_mtimes[rel_path]:
+                        continue
+
+                try:
+                    content = yaml_file.read_text(encoding="utf-8-sig")
+                except UnicodeDecodeError:
+                    content = yaml_file.read_text(encoding="latin-1")
+
+                system_key = _detect_system(rel_path)
+                summary = _infer_summary(content, rel_path, {}, is_yaml=True)
+                # Extract title from YAML name field
+                title = rel_path
+                try:
+                    import yaml as _yaml
+
+                    data = _yaml.safe_load(content) or {}
+                    title = data.get("name", Path(rel_path).stem.replace("-", " ").title())
+                except Exception:
+                    title = Path(rel_path).stem.replace("-", " ").title()
+
+                tokens = len(content) // 4
+                _upsert_resource(
+                    conn,
+                    rel_path,
+                    title,
+                    system_key,
+                    summary,
+                    [],
+                    tokens,
+                    False,
+                    current_mtime,
+                    now,
+                )
+                yaml_count += 1
             except Exception as e:
-                logger.warning(f"Failed to index {rel_path}: {e}")
+                logger.warning(f"Failed to index YAML {yaml_file}: {e}")
 
-        # Clean up entries for files that no longer exist on disk
-        _cleanup_stale_entries(conn, seen_paths, existing_mtimes)
-
+        _cleanup_stale_resources(conn, seen_paths)
         conn.commit()
-        mode = "hybrid (vector+keyword)" if embeddings_map else "keyword-only (FTS5)"
-        logger.info(f"Indexed {count} KB files ({skipped} unchanged) [{mode}]")
+        mode = "hybrid (vector+keyword)" if (file_data and any(embeddings_map for _ in [1])) else "keyword-only (FTS5)"
+        logger.info(f"Indexed {count} KB files + {yaml_count} skill YAMLs ({skipped} unchanged) [{mode}]")
     finally:
         conn.close()
-    return count
+    return count + yaml_count
 
 
 def semantic_search(
@@ -371,6 +649,121 @@ def semantic_search(
 
     conn.close()
     return fts_results[:top_k]
+
+
+def list_resources(
+    system_key: str = None,
+    layer: str = None,
+    kind: str = None,
+    limit: int = 200,
+    db_path: Path = None,
+) -> list[dict]:
+    """
+    Return manifest rows from kb_resources, optionally filtered and sorted by FABRIC layer.
+
+    Args:
+        system_key: Filter by system key (optional)
+        layer: Filter by layer letter F/A/B/R/I/C/shared/skill (optional)
+        kind: Filter by kind md/agent/skill_yaml (optional)
+        limit: Max rows to return
+        db_path: Path to index database
+
+    Returns:
+        List of dicts with path, title, system_key, layer, kind, summary, tokens.
+    """
+    if db_path is None:
+        from realize_core.config import KB_PATH
+
+        db_path = KB_PATH / "kb_index.db"
+
+    _init_index_db(db_path)
+    conn = _get_conn(db_path)
+
+    try:
+        conditions = []
+        params: list = []
+        if system_key:
+            conditions.append("system_key = ?")
+            params.append(system_key)
+        if layer:
+            conditions.append("layer = ?")
+            params.append(layer)
+        if kind:
+            conditions.append("kind = ?")
+            params.append(kind)
+
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        params.append(limit)
+
+        rows = conn.execute(
+            f"SELECT path, title, system_key, layer, kind, summary, tokens, tags FROM kb_resources {where} ORDER BY layer, title LIMIT ?",
+            params,
+        ).fetchall()
+
+        results = []
+        for r in rows:
+            results.append(
+                {
+                    "path": r["path"],
+                    "title": r["title"],
+                    "system_key": r["system_key"],
+                    "layer": r["layer"],
+                    "kind": r["kind"],
+                    "summary": r["summary"],
+                    "tokens": r["tokens"],
+                    "tags": json.loads(r["tags"] or "[]"),
+                }
+            )
+        # Sort by FABRIC layer order
+        results.sort(key=lambda x: (_LAYER_ORDER.get(x["layer"], 99), x["title"] or ""))
+        return results
+    except Exception as e:
+        logger.warning(f"list_resources failed: {e}")
+        return []
+    finally:
+        conn.close()
+
+
+def get_resource(path: str, db_path: Path = None) -> dict | None:
+    """
+    Return a single manifest row for a given path.
+
+    Args:
+        path: Relative path within the KB
+        db_path: Path to index database
+
+    Returns:
+        Dict with resource metadata, or None if not found.
+    """
+    if db_path is None:
+        from realize_core.config import KB_PATH
+
+        db_path = KB_PATH / "kb_index.db"
+
+    _init_index_db(db_path)
+    conn = _get_conn(db_path)
+    try:
+        row = conn.execute(
+            "SELECT path, title, system_key, layer, kind, summary, tokens, tags FROM kb_resources WHERE path = ?",
+            (path,),
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "path": row["path"],
+            "title": row["title"],
+            "system_key": row["system_key"],
+            "layer": row["layer"],
+            "kind": row["kind"],
+            "summary": row["summary"],
+            "tokens": row["tokens"],
+            "tags": json.loads(row["tags"] or "[]"),
+        }
+    except Exception as e:
+        logger.warning(f"get_resource failed: {e}")
+        return None
+    finally:
+        conn.close()
 
 
 def _fts_search(conn, query: str, system_key: str = None, top_k: int = 10) -> list[dict]:
