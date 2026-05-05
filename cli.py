@@ -481,17 +481,117 @@ def cmd_status(args):
     print(f"  MCP: {'enabled' if is_env_true('MCP_ENABLED', default=False) else 'disabled'}")
 
 
+_INDEX_MARKER_START = "<!-- realizeos:auto-index:start -->"
+_INDEX_MARKER_END = "<!-- realizeos:auto-index:end -->"
+
+
+def _render_index_table(resources: list[dict]) -> str:
+    """Render a markdown table for a list of resource manifest rows."""
+    if not resources:
+        return "_No resources found._\n"
+    lines = ["| File | Layer | Summary |", "|------|-------|---------|"]
+    for r in resources:
+        fname = Path(r["path"]).name
+        layer = r.get("layer", "")
+        summary = (r.get("summary") or "").replace("|", "&#124;")
+        lines.append(f"| `{fname}` | {layer} | {summary} |")
+    return "\n".join(lines) + "\n"
+
+
+def _rewrite_index_md(index_md_path: Path, resources: list[dict]) -> bool:
+    """
+    Rewrite the auto-index section of an _index.md file in-place.
+    Content between the start/end markers is replaced with a generated table.
+    If markers are absent, the table is appended at the end.
+    Returns True if the file was modified.
+    """
+    try:
+        original = index_md_path.read_text(encoding="utf-8")
+    except Exception as e:
+        print(f"  Warning: could not read {index_md_path}: {e}")
+        return False
+
+    table = _render_index_table(resources)
+    block = f"{_INDEX_MARKER_START}\n{table}{_INDEX_MARKER_END}"
+
+    if _INDEX_MARKER_START in original:
+        # Replace between existing markers
+        start_pos = original.index(_INDEX_MARKER_START)
+        end_pos = original.index(_INDEX_MARKER_END, start_pos) + len(_INDEX_MARKER_END)
+        new_content = original[:start_pos] + block + original[end_pos:]
+    else:
+        # Append markers at end of file
+        new_content = original.rstrip("\n") + "\n\n" + block + "\n"
+
+    if new_content == original:
+        return False
+
+    try:
+        index_md_path.write_text(new_content, encoding="utf-8")
+        return True
+    except Exception as e:
+        print(f"  Warning: could not write {index_md_path}: {e}")
+        return False
+
+
 def cmd_index(args):
-    """Rebuild the KB search index."""
+    """Rebuild the KB search index and optionally regenerate _index.md files."""
+    from pathlib import Path
+
     from realize_core.config import load_config
 
     config = load_config()
-    kb_path = config.get("kb_path", ".")
+    kb_path_str = config.get("kb_path", ".")
+    kb_path = Path(kb_path_str).resolve()
 
     from realize_core.kb.indexer import index_kb_files
 
-    count = index_kb_files(kb_path, force=True)
-    print(f"Indexed {count} files from {kb_path}")
+    force = getattr(args, "force", False)
+    count = index_kb_files(kb_path_str, force=force)
+    print(f"Indexed {count} files from {kb_path_str}")
+
+    write_index = getattr(args, "write_index", True)
+    system_filter = getattr(args, "system", None)
+
+    if not write_index:
+        return
+
+    # Find all existing _index.md files and regenerate them
+    from realize_core.kb.indexer import list_resources
+
+    index_files = list(kb_path.rglob("_index.md"))
+    if not index_files:
+        return
+
+    updated = 0
+    for index_md in sorted(index_files):
+        rel = index_md.relative_to(kb_path)
+        parts = rel.parts  # e.g. ('systems', 'realization', 'B-brain', '_index.md')
+
+        if len(parts) < 3 or parts[0] != "systems":
+            continue  # Skip any _index.md not under systems/
+
+        system_key = parts[1]
+        if system_filter and system_key != system_filter:
+            continue
+
+        # Derive layer from the parent directory name
+        folder_name = parts[2] if len(parts) >= 3 else ""
+        layer_map = {
+            "F-foundations": "F", "A-agents": "A", "B-brain": "B",
+            "R-routines": "R", "I-insights": "I", "C-creations": "C",
+        }
+        layer = layer_map.get(folder_name)
+
+        resources = list_resources(system_key=system_key, layer=layer) if layer else list_resources(system_key=system_key)
+
+        if _rewrite_index_md(index_md, resources):
+            print(f"  Updated {rel}")
+            updated += 1
+        else:
+            print(f"  Unchanged {rel}")
+
+    print(f"_index.md files: {updated}/{len(index_files)} updated")
 
 
 def cmd_evolve(args):
@@ -645,7 +745,17 @@ def main(argv=None):
     subparsers.add_parser("status", help="Show system status")
 
     # index
-    subparsers.add_parser("index", help="Rebuild KB search index")
+    index_parser = subparsers.add_parser("index", help="Rebuild KB search index and regenerate _index.md files")
+    index_parser.add_argument("--force", action="store_true", help="Re-index all files regardless of mtime")
+    index_parser.add_argument(
+        "--write-index", dest="write_index", action="store_true", default=True,
+        help="Regenerate _index.md files from the manifest (default: on)",
+    )
+    index_parser.add_argument(
+        "--no-write-index", dest="write_index", action="store_false",
+        help="Skip _index.md regeneration",
+    )
+    index_parser.add_argument("--system", default=None, help="Only regenerate _index.md for this system key")
 
     # evolve
     subparsers.add_parser("evolve", help="Run gap analysis and suggest system improvements")

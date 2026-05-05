@@ -10,6 +10,9 @@ Tools:
   - realizeos_get_system     — Get details of a specific system
   - realizeos_list_agents    — List agents for a system
   - realizeos_list_skills    — List available skills for a system
+  - realizeos_kb_search      — Search the KB index by query (returns paths + summaries)
+  - realizeos_kb_outline     — List all KB resources for a system/layer (ToC)
+  - realizeos_kb_get         — Read the full content of a single KB file
   - realizeos_chat           — Send a message to a venture agent
   - realizeos_get_history    — Get conversation history
   - realizeos_clear_history  — Clear conversation history
@@ -173,6 +176,80 @@ def realizeos_list_skills(system_key: str) -> str:
         system_key: The system identifier
     """
     return json.dumps(_get(f"/api/systems/{system_key}/skills"), indent=2)
+
+
+# ---- KB Navigation ----
+
+
+@mcp.tool()
+def realizeos_kb_search(
+    query: str,
+    system_key: str = "",
+    layer: str = "",
+    top_k: int = 8,
+) -> str:
+    """Search the RealizeOS knowledge base by natural language query.
+
+    Returns file paths and one-line summaries only — no full content.
+    Use realizeos_kb_get to read the content of a specific file.
+
+    Args:
+        query: Natural language search query
+        system_key: Filter to a specific venture system (e.g. 'realization', 'arena'). Optional.
+        layer: Filter by FABRIC layer — F (foundations), A (agents), B (brain), R (routines), I (insights), C (creations), skill. Optional.
+        top_k: Number of results to return (default 8)
+    """
+    params = f"q={query}&top_k={top_k}"
+    if system_key:
+        params += f"&system_key={system_key}"
+    if layer:
+        params += f"&layer={layer}"
+    return json.dumps(_get(f"/api/kb/search?{params}"), indent=2)
+
+
+@mcp.tool()
+def realizeos_kb_outline(
+    system_key: str,
+    layer: str = "",
+    kind: str = "",
+) -> str:
+    """Return a manifest table of contents for a RealizeOS venture system.
+
+    Lists all KB resources (files) with their layer, kind, and one-line summary.
+    Use this to discover what exists before deciding what to read.
+
+    Args:
+        system_key: The venture system identifier (e.g. 'realization', 'arena')
+        layer: Filter by FABRIC layer — F/A/B/R/I/C/shared/skill. Optional.
+        kind: Filter by resource kind — md, agent, skill_yaml. Optional.
+    """
+    params = ""
+    if layer:
+        params += f"?layer={layer}"
+        if kind:
+            params += f"&kind={kind}"
+    elif kind:
+        params += f"?kind={kind}"
+    return json.dumps(_get(f"/api/systems/{system_key}/kb/index{params}"), indent=2)
+
+
+@mcp.tool()
+def realizeos_kb_get(
+    path: str,
+    max_chars: int = 6000,
+) -> str:
+    """Read the full content of a single KB file by its path.
+
+    Use realizeos_kb_search or realizeos_kb_outline first to discover the path,
+    then call this to load the content you actually need.
+
+    Args:
+        path: Relative path within the KB (e.g. 'systems/realization/B-brain/domain-knowledge.md')
+        max_chars: Maximum characters to return (default 6000, ~1500 tokens)
+    """
+    import urllib.parse
+    encoded_path = urllib.parse.quote(path, safe="")
+    return json.dumps(_get(f"/api/kb/file?path={encoded_path}&max_chars={max_chars}"), indent=2)
 
 
 # ---- Chat ----
@@ -443,9 +520,8 @@ if __name__ == "__main__":
         )
 
         import hmac
+
         import uvicorn
-        from starlette.applications import Starlette
-        from starlette.requests import Request
         from starlette.responses import JSONResponse
         from starlette.routing import Mount
         from starlette.types import ASGIApp, Receive, Scope, Send

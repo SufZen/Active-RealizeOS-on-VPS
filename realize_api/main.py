@@ -21,7 +21,7 @@ from realize_api.middleware import (
     RequestSizeLimitMiddleware,
     SecurityHeadersMiddleware,
 )
-from realize_api.routes import chat, evolution, health, systems, webhooks
+from realize_api.routes import chat, evolution, health, kb, systems, webhooks
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +208,7 @@ def create_app() -> FastAPI:
     # --- Routes ---
     app.include_router(chat.router, prefix="/api", tags=["Chat"])
     app.include_router(systems.router, prefix="/api", tags=["Systems"])
+    app.include_router(kb.router, prefix="/api", tags=["KB"])
     app.include_router(health.router, tags=["Health"])
     app.include_router(webhooks.router, tags=["Webhooks"])
     app.include_router(evolution.router, prefix="/api", tags=["Evolution"])
